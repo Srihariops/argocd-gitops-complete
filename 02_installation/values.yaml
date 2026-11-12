@@ -1,0 +1,52 @@
+# ======================================================================
+# FILE   : values.yaml
+# PURPOSE: Helm settings for Argo CD: URL, replicas, metrics, dex, notifications.
+# CHANGE : Your domain (global.domain, configs.cm.url). Keep admin.enabled true until SSO works.
+# APPLY  : helm install argocd argo/argo-cd -n argocd -f values.yaml
+# ======================================================================
+# Helm values for Argo CD (production-leaning but simple).
+# Use:  helm install argocd argo/argo-cd -n argocd -f values.yaml
+global:
+  domain: argocd.example.com          # your Argo CD URL (no https://)
+
+configs:
+  params:
+    server.insecure: true             # TLS ends at the Ingress/ALB, so the server itself speaks plain HTTP
+  cm:
+    url: https://argocd.example.com   # external URL (needed for SSO)
+    admin.enabled: "true"             # set "false" AFTER SSO works
+    timeout.reconciliation: 180s      # how often Argo CD checks Git (default 3m)
+    application.resourceTrackingMethod: annotation
+
+controller:
+  replicas: 1                         # keep 1 unless you shard many clusters
+  metrics:
+    enabled: true                     # Prometheus metrics (see 09_monitoring)
+    serviceMonitor:
+      enabled: false                  # set true if the Prometheus Operator is installed
+
+server:
+  replicas: 2                         # 2 = no downtime on restart
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+repoServer:
+  replicas: 2
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+redis:
+  enabled: true                       # for real HA use redis-ha instead
+
+dex:
+  enabled: true                       # needed for Google SSO (see 10_sso_rbac_google)
+
+notifications:
+  enabled: true                       # see 08_notifications
+
+applicationSet:
+  enabled: true                       # see 14_advanced

@@ -1,0 +1,52 @@
+# ======================================================================
+# FILE   : servicemonitors.yaml
+# PURPOSE: Tells Prometheus to scrape the controller, server and repo-server metrics.
+# CHANGE : The release label must match your Prometheus Helm release name.
+# APPLY  : kubectl apply -f servicemonitors.yaml
+# ======================================================================
+# Tells Prometheus Operator to scrape the Argo CD metric ports.
+# Alternatively set serviceMonitor.enabled: true in the Argo CD helm values.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-metrics
+  namespace: argocd
+  labels:
+    release: monitoring              # must match your kube-prometheus-stack release name
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-metrics          # controller metrics Service
+  endpoints:
+    - port: http-metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-server-metrics
+  namespace: argocd
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server-metrics
+  endpoints:
+    - port: http-metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-repo-server-metrics
+  namespace: argocd
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server-metrics
+  endpoints:
+    - port: metrics
+      interval: 30s

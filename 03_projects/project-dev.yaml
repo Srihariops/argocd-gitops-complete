@@ -1,0 +1,29 @@
+# ======================================================================
+# FILE   : project-dev.yaml
+# PURPOSE: Relaxed project for dev: one repo, only *-dev namespaces.
+# CHANGE : sourceRepos URL and destinations namespace pattern.
+# APPLY  : kubectl apply -f project-dev.yaml
+# ======================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: myargoproject-dev            # apps choose it with spec.project
+  namespace: argocd                  # always the argocd namespace
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io   # blocks deleting the project while apps still use it
+spec:
+  description: Dev environment (relaxed)
+
+  sourceRepos:                       # WHICH repos may be deployed
+    - https://github.com/<org>/<gitops-repo>.git    # be specific. '*' = any repo (avoid)
+
+  destinations:                      # WHERE apps may deploy
+    - server: https://kubernetes.default.svc        # the same cluster Argo CD runs in
+      namespace: "*-dev"             # only namespaces ending in -dev
+
+  clusterResourceWhitelist:          # cluster-wide kinds allowed
+    - group: ""
+      kind: Namespace                # allow creating namespaces only (CreateNamespace=true needs it)
+
+  orphanedResources:
+    warn: true                       # warn about resources in these namespaces not managed by Argo CD

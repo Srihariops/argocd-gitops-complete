@@ -1,0 +1,47 @@
+# ======================================================================
+# FILE   : applications.yaml
+# PURPOSE: Three Applications (dev auto, staging auto, prod manual sync).
+# CHANGE : repoURL, project names, paths.
+# APPLY  : kubectl apply -f applications.yaml
+# ======================================================================
+# Three Applications, one per environment. Same repo, different overlay folder.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-dev, namespace: argocd}
+spec:
+  project: myargoproject-dev
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: 13_multi_environment/overlays/dev       # adjust to your repo path
+  destination: {server: https://kubernetes.default.svc, namespace: web-dev}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}      # dev: fully automatic
+    syncOptions: [CreateNamespace=true]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-staging, namespace: argocd}
+spec:
+  project: myargoproject-dev
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: 13_multi_environment/overlays/staging
+  destination: {server: https://kubernetes.default.svc, namespace: web-staging}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-prod, namespace: argocd}
+spec:
+  project: myargoproject-prod
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: 13_multi_environment/overlays/prod
+  destination: {server: https://kubernetes.default.svc, namespace: web-prod}
+  syncPolicy:                                     # prod: NO automated block = a human clicks Sync
+    syncOptions: [CreateNamespace=true]

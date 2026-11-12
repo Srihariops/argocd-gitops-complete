@@ -1,0 +1,40 @@
+# ======================================================================
+# FILE   : argocd-cm.yaml
+# PURPOSE: AUTHENTICATION: URL and Google connector (domain, admin email, allowed groups).
+# CHANGE : Domain, admin email, group emails, URLs.
+# APPLY  : kubectl apply -f argocd-cm.yaml
+# ======================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  url: https://argocd.example.com       # same host as the Google redirect URI
+  admin.enabled: "true"                 # set "false" once SSO admin login is confirmed
+  dex.config: |
+    connectors:
+      - type: google
+        id: google
+        name: Google                    # text on the login button
+        config:
+          clientID: $argocd-sso-secret:google.clientID
+          clientSecret: $argocd-sso-secret:google.clientSecret
+          redirectURI: https://argocd.example.com/api/dex/callback
+          hostedDomains:
+            - example.com               # only your Workspace domain may log in
+          serviceAccountFilePath: /tmp/oidc/serviceaccount.json
+          domainToAdminEmail:
+            example.com: admin@example.com    # admin the service account impersonates
+          groups:                       # allow-list: users in none of these are refused
+            - argocd-devops@example.com
+            - argocd-sre@example.com
+            - argocd-junior-devops@example.com
+            - argocd-developers@example.com
+          scopes:
+            - profile
+            - email
+            - https://www.googleapis.com/auth/admin.directory.group.readonly

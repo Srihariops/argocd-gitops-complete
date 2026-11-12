@@ -1,0 +1,25 @@
+# ======================================================================
+# FILE   : deployment.yaml
+# PURPOSE: Shared Deployment without environment-specific values.
+# CHANGE : Container, probes, resources.
+# APPLY  : (used through overlays)
+# ======================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 1                         # overlays change this
+  selector:
+    matchLabels: {app: web}
+  template:
+    metadata:
+      labels: {app: web}
+    spec:
+      containers:
+        - name: web
+          image: nginx                # tag set by each overlay
+          ports: [{containerPort: 80}]
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}

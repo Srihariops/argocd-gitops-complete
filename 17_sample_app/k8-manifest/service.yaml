@@ -1,0 +1,13 @@
+# ======================================================================
+# FILE   : service.yaml
+# PURPOSE: Service for the Deployment.
+# CHANGE : Ports.
+# APPLY  : (synced by Argo CD)
+# ======================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  selector: {app: web}
+  ports: [{port: 80, targetPort: 80}]

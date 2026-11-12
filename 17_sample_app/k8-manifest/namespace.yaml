@@ -1,0 +1,12 @@
+# ======================================================================
+# FILE   : namespace.yaml
+# PURPOSE: Namespace created first (sync wave -1).
+# CHANGE : Name.
+# APPLY  : (synced by Argo CD)
+# ======================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"    # create first

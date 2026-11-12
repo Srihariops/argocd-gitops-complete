@@ -1,0 +1,30 @@
+# ======================================================================
+# FILE   : application-helm.yaml
+# PURPOSE: Deploys a Helm chart from a chart repo with value overrides.
+# CHANGE : chart name, pinned version, values.
+# APPLY  : kubectl apply -f application-helm.yaml
+# ======================================================================
+# Deploy a Helm chart straight from a Helm repo with value overrides.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-helm
+  namespace: argocd
+spec:
+  project: myargoproject-dev
+  source:
+    repoURL: https://charts.bitnami.com/bitnami   # Helm repository URL
+    chart: nginx                                   # chart name (use 'path' instead for a chart inside Git)
+    targetRevision: 18.2.0                         # PIN the chart version in production
+    helm:
+      releaseName: nginx
+      valuesObject:                                # inline overrides (or use valueFiles from Git)
+        replicaCount: 2
+        service:
+          type: ClusterIP
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nginx-dev
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]

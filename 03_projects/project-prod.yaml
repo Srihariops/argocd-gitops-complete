@@ -1,0 +1,53 @@
+# ======================================================================
+# FILE   : project-prod.yaml
+# PURPOSE: Strict project for prod: sync window, blocked kinds, deployer role.
+# CHANGE : sourceRepos, namespace pattern, group email, sync window times.
+# APPLY  : kubectl apply -f project-prod.yaml
+# ======================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: myargoproject-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Production (strict)
+
+  sourceRepos:
+    - https://github.com/<org>/<gitops-repo>.git
+
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*-prod"            # only -prod namespaces
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  # Block everything dangerous that is NOT listed above is already denied.
+  # Extra: never allow these namespaced kinds in this project
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: ResourceQuota            # example: only platform team manages quotas
+
+  # ---------- WHEN syncing is allowed ----------
+  syncWindows:
+    - kind: deny                     # no automatic deploys on business hours Mon-Fri 09:00-17:00 (UTC)
+      schedule: "0 9 * * 1-5"        # cron: start time
+      duration: 8h                   # window length
+      applications: ["*"]
+      manualSync: true               # a human can still sync manually (emergency)
+
+  # ---------- WHO can do what inside this project ----------
+  roles:
+    - name: deployer
+      description: Can sync and see prod apps, nothing else
+      policies:
+        - p, proj:myargoproject-prod:deployer, applications, get,  myargoproject-prod/*, allow
+        - p, proj:myargoproject-prod:deployer, applications, sync, myargoproject-prod/*, allow
+      groups:
+        - argocd-sre@example.com     # SSO group (see 10_sso_rbac_google)
+
+  orphanedResources:
+    warn: true

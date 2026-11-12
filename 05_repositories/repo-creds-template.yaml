@@ -1,0 +1,20 @@
+# ======================================================================
+# FILE   : repo-creds-template.yaml
+# PURPOSE: One credential for every repo starting with a URL prefix.
+# CHANGE : URL prefix, username, token.
+# APPLY  : kubectl apply -f repo-creds-template.yaml
+# ======================================================================
+# ONE credential for every repo whose URL starts with the prefix below.
+# Add each repo later in the UI/CLI without typing the password again.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-org-creds
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repo-creds     # note: repo-creds (not repository)
+stringData:
+  type: git
+  url: https://github.com/<org>                    # URL prefix
+  username: <github-username>
+  password: <GITHUB_READ_ONLY_TOKEN>

@@ -1,0 +1,30 @@
+# ======================================================================
+# FILE   : kustomization-example.yaml
+# PURPOSE: The kustomization.yaml in your app folder that Image Updater edits (images: newTag).
+# CHANGE : Image names, starting tags.
+# APPLY  : commit it into the app folder in Git
+# ======================================================================
+# Lives in your app folder (k8-manifest/kustomization.yaml). Argo CD builds this folder.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:                 # only listed files get deployed
+  - namespace.yaml
+  - posts.yaml
+  - comments.yaml
+  - stats.yaml
+  - frontend.yaml
+  - ingress.yaml
+
+# One entry per image in imageupdater.yaml (same name, NO tag in name).
+# newTag is the starting value; with git write-back Image Updater edits it and commits.
+# Keep the quotes: "001" must be a string, otherwise YAML turns it into the number 1.
+images:
+  - name: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/frontend
+    newTag: "001"
+  - name: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/posts
+    newTag: "001"
+  - name: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/comments
+    newTag: "001"
+  - name: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/stats
+    newTag: "001"           # (original had a missing closing quote here)

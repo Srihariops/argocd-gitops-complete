@@ -1,0 +1,19 @@
+# ======================================================================
+# FILE   : local-users-cm.yaml
+# PURPOSE: Defines local accounts: human login, login-only, and robot token-only.
+# CHANGE : Account names and capabilities.
+# APPLY  : kubectl apply -f local-users-cm.yaml
+# ======================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  accounts.alice: apiKey, login     # human: UI/CLI login + may create tokens
+  accounts.bob: login               # human: login only
+  accounts.ci-user: apiKey          # robot: token only, cannot log in to the UI
+  # accounts.alice.enabled: "false" # disable an account (offboarding)
