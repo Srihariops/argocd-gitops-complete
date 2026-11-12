@@ -1,7 +1,6 @@
 # ======================================================================
 # FILE   : project-prod.yaml
-# PURPOSE: Strict project for prod: sync window, blocked kinds, deployer role.
-# CHANGE : sourceRepos, namespace pattern, group email, sync window times.
+# PURPOSE: Strict prod: sync window, blocked kinds, deployer role.
 # APPLY  : kubectl apply -f project-prod.yaml
 # ======================================================================
 apiVersion: argoproj.io/v1alpha1

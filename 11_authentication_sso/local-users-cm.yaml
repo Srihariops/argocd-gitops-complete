@@ -1,0 +1,18 @@
+# ======================================================================
+# FILE   : local-users-cm.yaml
+# PURPOSE: Human and robot accounts.
+# APPLY  : kubectl apply -f local-users-cm.yaml
+# ======================================================================
+# LOCAL USERS: accounts stored in Argo CD itself. Good for robots (CI tokens) and tiny teams.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels: {app.kubernetes.io/name: argocd-cm, app.kubernetes.io/part-of: argocd}
+data:
+  accounts.alice: apiKey, login           # human: login (UI/CLI) + may create tokens
+  accounts.bob: login                     # human: login only
+  accounts.ci-user: apiKey                # robot: token only, cannot log in to the UI
+  # accounts.alice.enabled: "false"       # disable (offboarding)
+  admin.enabled: "true"                   # built-in admin; set "false" once SSO works

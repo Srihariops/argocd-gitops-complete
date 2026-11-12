@@ -1,0 +1,19 @@
+# ======================================================================
+# FILE   : argocd-vault-plugin-note.yaml
+# PURPOSE: Placeholders filled at sync time.
+# APPLY  : follow comments
+# ======================================================================
+# APPROACH D: HashiCorp Vault / AWS Secrets Manager placeholders rendered by the argocd-vault-plugin (AVP) at sync time.
+# Manifest in Git contains only a PLACEHOLDER; AVP (run as a config-management plugin in repo-server) fills the real value.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+  namespace: web-prod
+  annotations:
+    avp.kubernetes.io/path: "secret/data/web/prod"       # Vault path
+type: Opaque
+stringData:
+  password: <password>                                   # replaced by AVP from Vault key "password"
+# AWS Secrets Manager form:  avp.kubernetes.io/path: "web/prod/db"  and  password: <password>
+# The Application uses:  source.plugin.name: argocd-vault-plugin   (plugin installed as a sidecar of repo-server)

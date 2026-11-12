@@ -1,0 +1,23 @@
+# ======================================================================
+# FILE   : helm-values-ha.yaml
+# PURPOSE: HA overlay: redis-ha, 3 replicas, PDBs.
+# APPLY  : add -f helm-values-ha.yaml
+# ======================================================================
+# Add on top of helm-values.yaml for HA:  -f helm-values.yaml -f helm-values-ha.yaml
+redis-ha:
+  enabled: true                         # 3 redis + haproxy
+redis:
+  enabled: false                        # turn off the single redis
+controller:
+  replicas: 1                           # controller is sharded, not load-balanced; see 16_advanced
+server:
+  replicas: 3
+  pdb: {enabled: true, minAvailable: 1}
+repoServer:
+  replicas: 3
+  pdb: {enabled: true, minAvailable: 1}
+applicationSet:
+  replicas: 2
+global:
+  affinity:
+    podAntiAffinity: soft               # spread pods over nodes

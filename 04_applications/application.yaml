@@ -1,7 +1,6 @@
 # ======================================================================
 # FILE   : application.yaml
-# PURPOSE: The main Application: Git path to cluster namespace, with sync policy and retry.
-# CHANGE : name, project, repoURL, path, destination namespace.
+# PURPOSE: Full example: Kustomize path, auto-sync, retry, HPA ignore.
 # APPLY  : kubectl apply -f application.yaml
 # ======================================================================
 apiVersion: argoproj.io/v1alpha1

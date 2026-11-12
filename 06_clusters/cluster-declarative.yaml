@@ -1,0 +1,27 @@
+# ======================================================================
+# FILE   : cluster-declarative.yaml
+# PURPOSE: Cluster as a Secret with bearer token.
+# APPLY  : kubectl apply -f cluster-declarative.yaml
+# ======================================================================
+# Approach B: register a remote cluster with a Secret (GitOps style). Token comes from a ServiceAccount in that cluster.
+# In the REMOTE cluster:  kubectl create sa argocd-manager -n kube-system
+#   + ClusterRoleBinding to cluster-admin (or a narrower role) + a token Secret for that SA.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cluster-prod-eks
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster       # makes it a cluster
+stringData:
+  name: prod-eks                                  # name used in Application.destination.name
+  server: https://<EKS_API_ENDPOINT>              # remote API server URL
+  # project: myargoproject-prod                   # scope: only this project may use the cluster
+  config: |
+    {
+      "bearerToken": "<SERVICE_ACCOUNT_TOKEN>",
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData": "<BASE64_CA_CERT>"
+      }
+    }

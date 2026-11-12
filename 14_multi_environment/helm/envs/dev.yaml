@@ -1,0 +1,6 @@
+# ======================================================================
+# FILE   : helm/envs/dev.yaml
+# PURPOSE: dev overrides.
+# ======================================================================
+replicaCount: 1                      # dev: small
+ingress: {host: web-dev.example.com}

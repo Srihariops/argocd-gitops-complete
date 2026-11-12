@@ -1,0 +1,24 @@
+# ======================================================================
+# FILE   : kustomize/overlays/prod/kustomization.yaml
+# PURPOSE: prod: 4 replicas, more CPU. Promote by newTag.
+# APPLY  : kubectl kustomize kustomize/overlays/prod
+# ======================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: web-prod                        # every resource goes to this namespace
+resources:
+  - ../../base                        # start from the shared base
+images:
+  - name: nginx
+    newTag: "1.26"                    # promote by changing THIS line (via PR for staging/prod)
+patches:
+  - target: {kind: Deployment, name: web}
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 4
+  - target: {kind: Deployment, name: web}
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 500m                   # prod gets more CPU

@@ -1,0 +1,38 @@
+# ======================================================================
+# FILE   : argocd-cm-oidc-groups.yaml
+# PURPOSE: Three provider examples with the groups claim.
+# APPLY  : kubectl apply -f argocd-cm-oidc-groups.yaml
+# ======================================================================
+# GENERIC OIDC WITH GROUPS: Keycloak, Okta, Azure AD (Entra ID), Auth0, AWS Cognito, GitLab ...
+# Pick the example that matches your provider, delete the others.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels: {app.kubernetes.io/name: argocd-cm, app.kubernetes.io/part-of: argocd}
+data:
+  url: https://argocd.example.com
+  oidc.config: |
+    # ---------- Example 1: KEYCLOAK ----------
+    name: Keycloak
+    issuer: https://keycloak.example.com/realms/<realm>
+    clientID: argocd
+    clientSecret: $argocd-sso-secret:oidc.clientSecret
+    requestedScopes: ["openid", "profile", "email", "groups"]      # create a "groups" client scope with a Group Membership mapper
+    # Redirect URI in the provider: https://argocd.example.com/auth/callback
+
+    # ---------- Example 2: OKTA ----------
+    # name: Okta
+    # issuer: https://<tenant>.okta.com
+    # clientID: <client-id>
+    # clientSecret: $argocd-sso-secret:oidc.clientSecret
+    # requestedScopes: ["openid", "profile", "email", "groups"]    # add a "groups" claim to the authorization server
+
+    # ---------- Example 3: AZURE AD / ENTRA ID ----------
+    # name: Azure
+    # issuer: https://login.microsoftonline.com/<TENANT_ID>/v2.0
+    # clientID: <app-registration-client-id>
+    # clientSecret: $argocd-sso-secret:oidc.clientSecret
+    # requestedIDTokenClaims: {"groups": {"essential": true}}      # groups arrive as OBJECT IDs (GUIDs), use those in RBAC
+    # requestedScopes: ["openid", "profile", "email"]

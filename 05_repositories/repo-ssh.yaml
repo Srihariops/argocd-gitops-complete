@@ -1,0 +1,23 @@
+# ======================================================================
+# FILE   : repo-ssh.yaml
+# PURPOSE: SSH private key login.
+# APPLY  : kubectl apply -f repo-ssh.yaml
+# ======================================================================
+# Approach: SSH deploy key (no expiry, read-only key per repo). Works with GitHub/GitLab/CodeCommit(SSH).
+# 1) ssh-keygen -t ed25519 -f argocd-deploy-key -N ""    2) add argocd-deploy-key.pub as a READ-ONLY deploy key in the repo
+apiVersion: v1
+kind: Secret
+metadata:
+  name: repo-gitops-ssh
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: git
+  url: git@github.com:<org>/<gitops-repo>.git     # SSH URL (not https)
+  sshPrivateKey: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    <paste private key>
+    -----END OPENSSH PRIVATE KEY-----
+  # Host key trust: add the host to argocd-ssh-known-hosts-cm (GitHub's keys are built in)
+  # insecureIgnoreHostKey: "true"                 # lab only

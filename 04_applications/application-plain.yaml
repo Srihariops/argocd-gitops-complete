@@ -1,0 +1,23 @@
+# ======================================================================
+# FILE   : application-plain.yaml
+# PURPOSE: Plain folder with include/exclude.
+# APPLY  : kubectl apply -f application-plain.yaml
+# ======================================================================
+# Plain YAML folder (no Helm/Kustomize). Every .yaml in the folder is applied.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-plain, namespace: argocd}
+spec:
+  project: myargoproject-dev
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: k8-manifest/plain
+    directory:
+      recurse: true                   # also read sub-folders
+      include: "*.yaml"               # only these files
+      exclude: "*.test.yaml"          # skip these
+  destination: {server: https://kubernetes.default.svc, namespace: web-dev}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]

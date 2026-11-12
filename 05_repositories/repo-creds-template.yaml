@@ -1,7 +1,6 @@
 # ======================================================================
 # FILE   : repo-creds-template.yaml
-# PURPOSE: One credential for every repo starting with a URL prefix.
-# CHANGE : URL prefix, username, token.
+# PURPOSE: One credential reused for every repo under a prefix.
 # APPLY  : kubectl apply -f repo-creds-template.yaml
 # ======================================================================
 # ONE credential for every repo whose URL starts with the prefix below.

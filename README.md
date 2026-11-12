@@ -1,59 +1,62 @@
-# ArgoCD + GitOps Complete Guide (Basic → Production)
+# 🚀 ArgoCD + GitOps: Basic → Production Guide
 
-One folder = one topic. Every folder has:
-- a `README.md` guide (simple version, big picture, diagram, steps, **every YAML explained**, verify, troubleshooting, checklist)
-- the separate, ready-to-use `.yaml` files with `#` comments on every important line
+> [!TIP]
+> Every topic shows **all the common approaches** side by side (A / B / C …) with a comparison table, a diagram, key values, ready YAML and troubleshooting. New? Start at [00_start_here](00_start_here/README.md).
 
-> Replace every `<placeholder>` and `example.com`. **Never commit real passwords, tokens or AWS keys** (see folder 16).
-> New? Start with [00_start_here](00_start_here/README.md) (5 minutes, plain words).
-
+## Architecture
 ```mermaid
 flowchart LR
-  Dev[Developer] -->|git push| Code[(App code repo)]
-  Code -->|Jenkins builds| ECR[(AWS ECR)]
-  ECR -->|new tag| IU[Image Updater]
-  IU -->|commits tag| Git[(GitOps repo)]
-  Git -->|watched by| Argo[Argo CD]
-  Argo -->|sync| K8s[Kubernetes]
-  Argo -->|alerts| Chat[Slack / Email / Google Chat]
-  Prom[Prometheus + Grafana] -.monitors.-> Argo
+  Dev[Developer] -->|git push| Code[(App repo)] -->|Jenkins| ECR[(AWS ECR)]
+  ECR -->|new tag| IU[Image Updater] -->|commit tag| Git[(GitOps repo)]
+  Git -->|watch| Argo[Argo CD] -->|sync| K8s[Kubernetes]
+  Argo -->|alerts| Chat[Slack · Email · Chat]
+  Prom[Prometheus · Grafana] -.monitor.-> Argo
+  IdP[Google · GitHub · Okta] -->|SSO| Argo
 ```
 
-## Folders
-
-| # | Folder | What you get |
+## Folders and the approaches they cover
+| # | Folder | Approaches included |
 |---|---|---|
-| 00 | [00_start_here](00_start_here/README.md) | Simple explanation, glossary, order to follow |
-| 01 | [01_intro_gitops](01_intro_gitops/README.md) | GitOps, Argo CD parts, sync loop |
-| 02 | [02_installation](02_installation/README.md) | Helm install, CLI, values.yaml, ingress |
-| 03 | [03_projects](03_projects/README.md) | AppProjects dev and prod |
-| 04 | [04_applications](04_applications/README.md) | Application YAML, Helm app, sync policy, waves/hooks |
-| 05 | [05_repositories](05_repositories/README.md) | Connect private Git safely |
-| 06 | [06_sync_rollback_commands](06_sync_rollback_commands/README.md) | Sync, rollback, full command cheat sheet |
-| 07 | [07_image_updater](07_image_updater/README.md) | ECR → Git → Argo CD, token refresh script |
-| 08 | [08_notifications](08_notifications/README.md) | Slack, email, Google Chat |
-| 09 | [09_monitoring](09_monitoring/README.md) | Prometheus, Grafana, alert rules |
-| 10 | [10_sso_rbac_google](10_sso_rbac_google/README.md) | Google SSO + group RBAC (all files) |
-| 11 | [11_local_users_github_sso](11_local_users_github_sso/README.md) | Local users, robot tokens, GitHub SSO |
-| 12 | [12_https_cert_manager](12_https_cert_manager/README.md) | Free HTTPS with Let's Encrypt |
-| 13 | [13_multi_environment](13_multi_environment/README.md) | dev/staging/prod with Kustomize, multi-cluster |
-| 14 | [14_advanced](14_advanced/README.md) | App-of-Apps, ApplicationSet, canary, blue/green, backup |
-| 15 | [15_workflows_events](15_workflows_events/README.md) | Argo Workflows and Events (optional) |
-| 16 | [16_secrets_management](16_secrets_management/README.md) | Sealed Secrets and External Secrets (AWS) |
-| 17 | [17_sample_app](17_sample_app/README.md) | Practice app |
-| 18 | [18_production_checklist_troubleshooting](18_production_checklist_troubleshooting/README.md) | Go-live checklist, common errors |
-| 19 | [19_interview_questions](19_interview_questions/README.md) | 25 Q&A |
+| 00 | [start_here](00_start_here/README.md) | plain-words intro, glossary, order |
+| 01 | [architecture](01_architecture/README.md) | components, config objects, key values, 4 flows, topologies |
+| 02 | [installation](02_installation/README.md) | **Helm · Manifest (std/HA/core/namespaced) · Kustomize · CLI** |
+| 03 | [projects](03_projects/README.md) | YAML · CLI · UI |
+| 04 | [applications](04_applications/README.md) | UI · CLI · YAML · plain · Kustomize · Helm (Git/repo/multi-source) · manual vs auto sync · hooks/waves |
+| 05 | [repositories](05_repositories/README.md) | HTTPS token · SSH · GitHub App · CodeCommit · Helm repo · OCI/ECR · repo-creds · CLI/UI |
+| 06 | [clusters](06_clusters/README.md) | CLI · declarative Secret · EKS IAM |
+| 07 | [sync_rollback_operations](07_sync_rollback_operations/README.md) | auto · UI · CLI · CI · webhook; rollback by git revert · CLI · pin; cheat sheet |
+| 08 | [image_updater](08_image_updater/README.md) | CR vs annotations · **git vs argocd write-back** · 4 strategies · **ECR login A–E (keys, CronJob, IRSA, registries, `.docker`)** · pod pull secrets |
+| 09 | [notifications](09_notifications/README.md) | Slack · Email · Google Chat · Teams · Telegram · webhook; global/project/app/appset subscriptions |
+| 10 | [monitoring](10_monitoring/README.md) | Helm values · ServiceMonitor · static scrape; alerts + Alertmanager routes |
+| 11 | [authentication_sso](11_authentication_sso/README.md) | **Google+Dex · GitHub+Dex · Google OIDC · Keycloak/Okta/Azure · local users** |
+| 12 | [rbac](12_rbac/README.md) | global · project roles · local users · GitHub teams · e-mail · CI tokens · tests |
+| 13 | [exposure_https](13_exposure_https/README.md) | NGINX+cert-manager · ALB+ACM · passthrough · LoadBalancer · port-forward |
+| 14 | [multi_environment](14_multi_environment/README.md) | Kustomize overlays · Helm values · ApplicationSet · PR promotion · multi-cluster |
+| 15 | [secrets](15_secrets/README.md) | Sealed Secrets · External Secrets · SOPS · Vault plugin |
+| 16 | [advanced](16_advanced/README.md) | App-of-Apps · generators · canary/blue-green/analysis · HA/sharding · backup · upgrade · customizations |
+| 17 | [workflows_events](17_workflows_events/README.md) | Workflows · DAG · Cron · Events (optional) |
+| 18 | [sample_app](18_sample_app/README.md) | practice exercise |
+| 19 | [checklist_troubleshooting](19_checklist_troubleshooting/README.md) | go-live checklist, error tables, log commands |
+| 20 | [interview_questions](20_interview_questions/README.md) | 30 Q&A |
 
-## Suggested layout of your own GitOps repo
+## How each folder is organised
+`What & why` → `Architecture` → `Key values` → `Choose your approach` (table + decision diagram) → `Approach A/B/C…` (explained YAML) → `Verify` → `Troubleshooting` → `Checklist`.
+Each YAML is shown in a collapsible block and also exists as a separate file with `#` comments. Replace `<placeholders>` and `example.com`.
+
+> [!WARNING]
+> Never commit real tokens, AWS keys or passwords. See [15_secrets](15_secrets/README.md). Pin versions in production.
+
+## Suggested layout of your GitOps repo
 ```
 My_Gitops/
 ├── argocd/
-│   ├── projects/        # from 03
-│   ├── repos/           # from 05 (sealed!)
-│   ├── apps/            # from 04, 13
-│   ├── image-updater/   # from 07
-│   ├── notifications/   # from 08
-│   └── sso-rbac/        # from 10
-└── k8-manifest/<app>/   # what actually gets deployed
+│   ├── install/         # 02 (kustomize)
+│   ├── projects/        # 03, 12
+│   ├── repos/           # 05 (sealed / external secrets)
+│   ├── apps/            # 04, 14 (root app reads this)
+│   ├── image-updater/   # 08
+│   ├── notifications/   # 09
+│   └── sso-rbac/        # 11, 12
+└── k8-manifest/<app>/   # what gets deployed
 ```
-Base for the reference chapters: https://github.com/LondheShubham153/argocd-in-one-shot
+Reference chapters: https://github.com/LondheShubham153/argocd-in-one-shot

@@ -1,0 +1,27 @@
+# ======================================================================
+# FILE   : ecr-D-registries-config.yaml
+# PURPOSE: registries.conf with 3 credential styles.
+# APPLY  : kubectl apply -f ecr-D-registries-config.yaml
+# ======================================================================
+# TELL IMAGE UPDATER HOW TO LOG IN TO ECR. Pick ONE credentials style (uncomment one line).
+# NOTE: ConfigMap/key names can differ by Image Updater version. Check the docs of YOUR version.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-image-updater-config
+  namespace: argocd
+data:
+  registries.conf: |
+    registries:
+      - name: ECR
+        api_url: https://<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com
+        prefix: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com
+        ping: yes
+        insecure: no
+        # STYLE 1 (works with approaches A/B/C): read the docker-registry Secret the CronJob keeps fresh
+        credentials: pullsecret:argocd/argocd-image-updater-secret
+        # STYLE 2: run a script that prints "AWS:<token>" (needs aws-cli inside the updater image + IRSA on its pod)
+        # credentials: ext:/scripts/ecr-login.sh
+        # STYLE 3: plain secret with a key holding "user:password"
+        # credentials: secret:argocd/ecr-creds#creds
+        credsexpire: 10h                  # re-read before the 12 h token expires

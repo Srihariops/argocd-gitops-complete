@@ -1,0 +1,9 @@
+# ======================================================================
+# FILE   : helm/envs/prod.yaml
+# PURPOSE: prod overrides and image tag.
+# ======================================================================
+replicaCount: 4                      # prod: bigger
+image: {tag: "1.26"}                 # promote by editing this line via PR
+resources:
+  limits: {cpu: 500m, memory: 256Mi}
+ingress: {host: web.example.com}

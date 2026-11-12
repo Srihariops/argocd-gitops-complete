@@ -1,0 +1,25 @@
+# ======================================================================
+# FILE   : repo-github-app.yaml
+# PURPOSE: App-based login, best for organizations.
+# APPLY  : kubectl apply -f repo-github-app.yaml
+# ======================================================================
+# Approach: GitHub App (best for organizations: no personal user, higher rate limits, auto-rotating tokens)
+# Create: GitHub Org -> Settings -> Developer settings -> GitHub Apps -> New. Permission: Contents = Read-only.
+# Install the app on the GitOps repo. Note App ID and Installation ID. Generate a private key (.pem).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: repo-gitops-ghapp
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: git
+  url: https://github.com/<org>/<gitops-repo>.git
+  githubAppID: "<APP_ID>"
+  githubAppInstallationID: "<INSTALLATION_ID>"
+  githubAppPrivateKey: |
+    -----BEGIN RSA PRIVATE KEY-----
+    <paste .pem>
+    -----END RSA PRIVATE KEY-----
+  # githubAppEnterpriseBaseUrl: https://ghe.example.com/api/v3   # only for GitHub Enterprise

@@ -1,0 +1,24 @@
+# ======================================================================
+# FILE   : application-kustomize.yaml
+# PURPOSE: Kustomize overlay with optional overrides.
+# APPLY  : kubectl apply -f application-kustomize.yaml
+# ======================================================================
+# Kustomize app: Argo CD auto-detects kustomization.yaml in the path.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-kustomize, namespace: argocd}
+spec:
+  project: myargoproject-dev
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: k8-manifest/web/overlays/dev
+    kustomize:                        # optional overrides (usually keep these in Git instead)
+      namePrefix: dev-                # prefix all names
+      images:
+        - nginx=nginx:1.27            # replace an image tag
+      commonLabels: {env: dev}
+  destination: {server: https://kubernetes.default.svc, namespace: web-dev}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]

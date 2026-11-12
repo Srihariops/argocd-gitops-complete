@@ -1,0 +1,24 @@
+# ======================================================================
+# FILE   : subscribe-applicationset.yaml
+# PURPOSE: Annotations in an ApplicationSet template.
+# APPLY  : kubectl apply -f subscribe-applicationset.yaml
+# ======================================================================
+# SUBSCRIPTION METHOD 3: put the annotations in an ApplicationSet template => all generated apps are subscribed.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata: {name: all-apps, namespace: argocd}
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/<org>/<gitops-repo>.git
+        revision: main
+        directories: [{path: "k8-manifest/apps/*"}]
+  template:
+    metadata:
+      name: "{{path.basename}}"
+      annotations:
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: devops-alerts
+    spec:
+      project: myargoproject-dev
+      source: {repoURL: "https://github.com/<org>/<gitops-repo>.git", targetRevision: main, path: "{{path}}"}
+      destination: {server: "https://kubernetes.default.svc", namespace: "{{path.basename}}"}

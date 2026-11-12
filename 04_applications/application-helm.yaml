@@ -1,7 +1,6 @@
 # ======================================================================
 # FILE   : application-helm.yaml
-# PURPOSE: Deploys a Helm chart from a chart repo with value overrides.
-# CHANGE : chart name, pinned version, values.
+# PURPOSE: Third-party Helm chart with value overrides.
 # APPLY  : kubectl apply -f application-helm.yaml
 # ======================================================================
 # Deploy a Helm chart straight from a Helm repo with value overrides.

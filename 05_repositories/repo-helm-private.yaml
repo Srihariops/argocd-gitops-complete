@@ -1,0 +1,19 @@
+# ======================================================================
+# FILE   : repo-helm-private.yaml
+# PURPOSE: Private Helm chart repository.
+# APPLY  : kubectl apply -f repo-helm-private.yaml
+# ======================================================================
+# Approach: private Helm chart repository (ChartMuseum, Nexus, Artifactory, GitHub Pages with auth).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: repo-helm-private
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: helm
+  name: company-charts                  # REQUIRED for helm repos (used in Applications as repoURL + chart)
+  url: https://charts.example.com
+  username: <user>
+  password: <password-or-token>

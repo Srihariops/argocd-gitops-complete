@@ -1,0 +1,76 @@
+# ======================================================================
+# FILE   : applicationset-generators.yaml
+# PURPOSE: git, clusters, matrix, pull-request generators.
+# APPLY  : kubectl apply -f applicationset-generators.yaml
+# ======================================================================
+# APPLICATIONSET GENERATORS: how one template becomes many Applications. Pick the generator that matches your layout.
+# 1) git DIRECTORIES: one app per folder
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata: {name: apps-by-folder, namespace: argocd}
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/<org>/<gitops-repo>.git
+        revision: main
+        directories: [{path: "k8-manifest/apps/*"}]
+  template:
+    metadata: {name: "{{path.basename}}"}
+    spec:
+      project: myargoproject-dev
+      source: {repoURL: "https://github.com/<org>/<gitops-repo>.git", targetRevision: main, path: "{{path}}"}
+      destination: {server: "https://kubernetes.default.svc", namespace: "{{path.basename}}"}
+      syncPolicy: {automated: {prune: true, selfHeal: true}, syncOptions: [CreateNamespace=true]}
+---
+# 2) CLUSTERS: one app per registered cluster (label selected) e.g. install monitoring everywhere
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata: {name: monitoring-everywhere, namespace: argocd}
+spec:
+  generators:
+    - clusters:
+        selector: {matchLabels: {env: prod}}          # label the cluster Secret with env=prod
+  template:
+    metadata: {name: "monitoring-{{name}}"}
+    spec:
+      project: default
+      source: {repoURL: "https://github.com/<org>/<gitops-repo>.git", targetRevision: main, path: platform/monitoring}
+      destination: {server: "{{server}}", namespace: monitoring}
+      syncPolicy: {automated: {selfHeal: true}, syncOptions: [CreateNamespace=true]}
+---
+# 3) MATRIX: combine generators (every folder x every cluster)
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata: {name: apps-x-clusters, namespace: argocd}
+spec:
+  generators:
+    - matrix:
+        generators:
+          - git: {repoURL: "https://github.com/<org>/<gitops-repo>.git", revision: main, directories: [{path: "k8-manifest/apps/*"}]}
+          - clusters: {}
+  template:
+    metadata: {name: "{{path.basename}}-{{name}}"}
+    spec:
+      project: default
+      source: {repoURL: "https://github.com/<org>/<gitops-repo>.git", targetRevision: main, path: "{{path}}"}
+      destination: {server: "{{server}}", namespace: "{{path.basename}}"}
+---
+# 4) PULL REQUEST: a preview environment per open PR (deleted when the PR closes)
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata: {name: pr-previews, namespace: argocd}
+spec:
+  generators:
+    - pullRequest:
+        github:
+          owner: <org>
+          repo: <app-repo>
+          tokenRef: {secretName: github-token, key: token}
+        requeueAfterSeconds: 120
+  template:
+    metadata: {name: "preview-{{number}}"}
+    spec:
+      project: myargoproject-dev
+      source: {repoURL: "https://github.com/<org>/<app-repo>.git", targetRevision: "{{head_sha}}", path: deploy}
+      destination: {server: "https://kubernetes.default.svc", namespace: "preview-{{number}}"}
+      syncPolicy: {automated: {prune: true}, syncOptions: [CreateNamespace=true]}

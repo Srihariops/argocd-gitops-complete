@@ -1,0 +1,33 @@
+# ======================================================================
+# FILE   : imageupdater-annotations-legacy.yaml
+# PURPOSE: Legacy: everything as annotations on the Application.
+# APPLY  : annotate your Application
+# ======================================================================
+# LEGACY STYLE (Image Updater v0.x): configuration as ANNOTATIONS on the Application. No ImageUpdater CR.
+# Still common in older clusters. New installs should use the CR files in this folder.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fcoos-insights
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: |
+      fe=<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/frontend,
+      posts=<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/posts
+    argocd-image-updater.argoproj.io/fe.update-strategy: newest-build
+    argocd-image-updater.argoproj.io/fe.allow-tags: regexp:^[0-9]{3}$
+    argocd-image-updater.argoproj.io/posts.update-strategy: newest-build
+    argocd-image-updater.argoproj.io/write-back-method: git:secret:argocd/argocd-image-updater-git-creds
+    argocd-image-updater.argoproj.io/git-branch: main
+    argocd-image-updater.argoproj.io/write-back-target: kustomization
+    # Helm charts: argocd-image-updater.argoproj.io/fe.helm.image-name: image.repository  (+ .helm.image-tag)
+    # Registry login for ECR: argocd-image-updater.argoproj.io/fe.pull-secret: pullsecret:argocd/argocd-image-updater-secret
+spec:
+  project: myargoproject-dev
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: k8-manifest
+  destination: {server: https://kubernetes.default.svc, namespace: fcoos}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}

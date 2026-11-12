@@ -1,0 +1,37 @@
+# ======================================================================
+# FILE   : alertmanager-route.yaml
+# PURPOSE: Critical → Slack + email; warning → Slack.
+# APPLY  : kubectl apply -f alertmanager-route.yaml
+# ======================================================================
+# Where do Prometheus alerts GO? Alertmanager config (kube-prometheus-stack: alertmanager.config in helm values,
+# or an AlertmanagerConfig object). Example: critical -> Slack + email, warning -> Slack only.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: argocd-routes
+  namespace: argocd
+  labels: {alertmanagerConfig: main}
+spec:
+  route:
+    receiver: slack-warning
+    groupBy: [alertname, name]
+    routes:
+      - matchers: [{name: severity, value: critical}]
+        receiver: slack-critical
+  receivers:
+    - name: slack-warning
+      slackConfigs:
+        - channel: "#devops-alerts"
+          apiURL: {name: slack-webhook, key: url}     # Secret with the Slack webhook URL
+          sendResolved: true
+    - name: slack-critical
+      slackConfigs:
+        - channel: "#prod-incidents"
+          apiURL: {name: slack-webhook, key: url}
+          sendResolved: true
+      emailConfigs:
+        - to: oncall@example.com
+          from: alerts@example.com
+          smarthost: smtp.gmail.com:587
+          authUsername: alerts@example.com
+          authPassword: {name: smtp-secret, key: password}

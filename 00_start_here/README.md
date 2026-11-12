@@ -1,66 +1,60 @@
-# 00 · START HERE (read this first, 5 minutes)
+# 🧭 Start Here
 
-## The idea in plain words
-Think of **Git as a recipe book** and **Kubernetes as the kitchen**.
-**Argo CD is the cook** who keeps checking the recipe book and makes the kitchen match it.
-You never cook by hand. You only **change the recipe (Git)**.
+> [!TIP]
+> New to Argo CD? Read this page (5 min), then follow the **path** below. Every folder has the same layout, so once you read one you can read all.
+
+## The idea in one picture
+**Git is the recipe book. Kubernetes is the kitchen. Argo CD is the cook** who keeps the kitchen matching the recipe. You never cook by hand; you change the recipe.
 
 ```mermaid
 flowchart LR
-  A[1. You change YAML in Git] --> B[2. Argo CD sees the change] --> C[3. Argo CD updates the cluster] --> D[4. You get an alert: OK or failed]
+  A[You edit YAML in Git] --> B[Argo CD notices] --> C[Argo CD updates the cluster] --> D[You get an alert]
 ```
 
-## Your real project flow (what you actually have)
-```mermaid
-flowchart LR
-  J[Jenkins builds image] --> E[(AWS ECR)] --> U[Image Updater<br/>finds new tag] --> G[(GitHub repo<br/>tag updated)] --> A[Argo CD] --> K[Kubernetes]
-  A --> N[Chat / Email alert]
-```
-
-## Words you must know (only 10)
-| Word | Simple meaning |
+## How every folder is laid out
+| Section | What it gives you |
 |---|---|
-| **GitOps** | Git is the boss. Cluster follows Git |
-| **Argo CD** | The tool that copies Git to the cluster |
-| **Application** | "Deploy THIS folder to THIS namespace" |
-| **Project** | A fence: which repos and namespaces an app may use |
-| **Sync** | Make the cluster equal to Git |
-| **OutOfSync** | Cluster is different from Git |
-| **Healthy** | Pods are running fine |
-| **Self-heal** | Argo CD undoes manual changes |
-| **Prune** | Argo CD deletes what you removed from Git |
-| **Image Updater** | Robot that puts the new image tag into Git |
+| **What & why** | Plain explanation and a real use case |
+| **Architecture / flow** | A diagram of who talks to whom |
+| **Key values** | The important settings: key → meaning → example |
+| **Choose your approach** | A comparison table so you pick the right option |
+| **Approach A / B / C …** | Every common way to do it, step by step, with files |
+| **Verify · Troubleshoot · Checklist** | Proof it works, fixes, go-live list |
 
-## Do it in this order (first time setup)
-| Step | Do this | Folder |
+> [!NOTE]
+> YAML files are shown in collapsible blocks (click **📄 file**) and also exist as separate files next to the README. `#` comments explain each important line. Replace anything in `<angle brackets>`.
+
+## Learning path
+| Step | Goal | Folder |
 |---|---|---|
-| 1 | Install Argo CD | [02](../02_installation/README.md) |
-| 2 | Create Projects (dev, prod) | [03](../03_projects/README.md) |
-| 3 | Connect your private GitHub repo | [05](../05_repositories/README.md) |
-| 4 | Create your Application | [04](../04_applications/README.md) |
-| 5 | Turn on auto image update from ECR | [07](../07_image_updater/README.md) |
-| 6 | Turn on alerts | [08](../08_notifications/README.md) |
-| 7 | Turn on monitoring | [09](../09_monitoring/README.md) |
-| 8 | Setup login (SSO) and permissions | [10](../10_sso_rbac_google/README.md) |
-| 9 | Check the go-live list | [19](../18_production_checklist_troubleshooting/README.md) |
+| 1 | Understand the parts | [01_architecture](../01_architecture/README.md) |
+| 2 | Install Argo CD (Helm / Manifest / Kustomize) | [02_installation](../02_installation/README.md) |
+| 3 | Put apps behind rules | [03_projects](../03_projects/README.md) |
+| 4 | Connect Git and clusters | [05_repositories](../05_repositories/README.md) · [06_clusters](../06_clusters/README.md) |
+| 5 | Deploy your first app | [04_applications](../04_applications/README.md) |
+| 6 | Auto-deploy new images from ECR | [08_image_updater](../08_image_updater/README.md) |
+| 7 | Alerts and graphs | [09_notifications](../09_notifications/README.md) · [10_monitoring](../10_monitoring/README.md) |
+| 8 | Login and permissions | [11_authentication_sso](../11_authentication_sso/README.md) · [12_rbac](../12_rbac/README.md) |
+| 9 | HTTPS, environments, secrets | [13](../13_exposure_https/README.md) · [14](../14_multi_environment/README.md) · [15](../15_secrets/README.md) |
+| 10 | Go live | [19_checklist_troubleshooting](../19_checklist_troubleshooting/README.md) |
 
-## Which file do I edit for…?
-| I want to… | Edit this |
+## Glossary (10 words)
+| Word | Meaning |
 |---|---|
-| Deploy a new app | `04_applications/application.yaml` |
-| Change replicas / image / config | your app folder in Git (`k8-manifest/`) |
-| Give a person access | add them to a **Google group** (no YAML) |
-| Get alerts in Slack/Chat | `08_notifications/` |
-| Stop auto deploy on prod | remove the `automated:` block in the prod Application |
-| Roll back | `git revert` + push ([06](../06_sync_rollback_commands/README.md)) |
+| GitOps | Git is the source of truth; the cluster follows it |
+| Application | "Deploy this Git folder to this namespace" |
+| Project | A fence: allowed repos, clusters, namespaces, roles |
+| Sync | Make the cluster equal to Git |
+| OutOfSync / Synced | Different from Git / equal to Git |
+| Healthy / Degraded | Pods fine / something is failing |
+| Self-heal | Undo manual cluster edits |
+| Prune | Delete what was removed from Git |
+| Write-back | Where Image Updater saves a new tag: Git or Argo CD |
+| SSO / RBAC | Who you are / what you may do |
 
-## 5 golden rules
-1. **Change Git, never the cluster.**
-2. **No passwords in Git** (use Sealed Secrets or External Secrets).
-3. **One project per environment** (dev / staging / prod).
+## Five golden rules
+1. Change **Git**, never the cluster.
+2. **No plain secrets in Git** ([15_secrets](../15_secrets/README.md)).
+3. **One project per environment.**
 4. **Prod changes go through a pull request.**
-5. **If a token was ever pasted anywhere public, revoke it.**
-
-## Every YAML file here follows the same pattern
-`apiVersion` + `kind` (what it is) → `metadata` (name) → `spec` (the settings).
-Lines starting with `#` are explanations. Replace anything in `<angle brackets>`.
+5. A token pasted anywhere public is **burned**: revoke it.

@@ -1,0 +1,19 @@
+# ======================================================================
+# FILE   : rbac-local-users.yaml
+# PURPOSE: Bind account names and a robot.
+# APPLY  : kubectl apply -f rbac-local-users.yaml
+# ======================================================================
+# APPROACH: RBAC for LOCAL accounts (folder 11, approach E). Subject is the account name.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+data:
+  policy.default: ""
+  policy.csv: |
+    g, alice,   role:admin
+    g, bob,     role:readonly
+    # robot that may only sync one project
+    p, ci-user, applications, get,  myargoproject-dev/*, allow
+    p, ci-user, applications, sync, myargoproject-dev/*, allow

@@ -1,0 +1,24 @@
+# ======================================================================
+# FILE   : google-dex-mount-patch.yaml
+# PURPOSE: Mount the key into the Dex pod.
+# APPLY  : kubectl -n argocd patch deploy argocd-dex-server --patch-file google-dex-mount-patch.yaml
+# ======================================================================
+# Mounts the service account key into Dex at /tmp/oidc/serviceaccount.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-dex-server
+  namespace: argocd
+spec:
+  template:
+    spec:
+      volumes:
+        - name: google-sa
+          secret:
+            secretName: argocd-google-sa
+      containers:
+        - name: dex
+          volumeMounts:
+            - name: google-sa
+              mountPath: /tmp/oidc
+              readOnly: true

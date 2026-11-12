@@ -1,0 +1,34 @@
+# ======================================================================
+# FILE   : health-and-diff-customizations.yaml
+# PURPOSE: ignoreDifferences, Lua health check, exclusions.
+# APPLY  : kubectl apply -f health-and-diff-customizations.yaml
+# ======================================================================
+# TUNE how Argo CD judges things (put in argocd-cm). Examples you will really need.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels: {app.kubernetes.io/name: argocd-cm, app.kubernetes.io/part-of: argocd}
+data:
+  # 1) Ignore fields that controllers/webhooks always change, for ALL apps
+  resource.customizations.ignoreDifferences.apps_Deployment: |
+    jsonPointers:
+      - /spec/replicas                                   # HPA owns replicas
+  resource.customizations.ignoreDifferences.admissionregistration.k8s.io_MutatingWebhookConfiguration: |
+    jqPathExpressions:
+      - '.webhooks[]?.clientConfig.caBundle'             # cert-manager injects this
+  # 2) Custom health for a CRD (Lua): healthy when .status.phase == Ready
+  resource.customizations.health.example.com_Widget: |
+    hs = {}
+    if obj.status ~= nil and obj.status.phase == "Ready" then
+      hs.status = "Healthy"; hs.message = "ready"
+    else
+      hs.status = "Progressing"; hs.message = "waiting"
+    end
+    return hs
+  # 3) Stop watching noisy kinds
+  resource.exclusions: |
+    - apiGroups: [""]
+      kinds: [Event]
+      clusters: ["*"]

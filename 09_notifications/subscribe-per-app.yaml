@@ -1,0 +1,22 @@
+# ======================================================================
+# FILE   : subscribe-per-app.yaml
+# PURPOSE: Annotations on one Application (all channel types).
+# APPLY  : kubectl apply -f subscribe-per-app.yaml
+# ======================================================================
+# SUBSCRIPTION METHOD 1: annotations on ONE Application.
+# Format: notifications.argoproj.io/subscribe.<trigger>.<service>: <recipient>
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fcoos-insights
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: deploys          # Slack channel
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: devops-alerts
+    notifications.argoproj.io/subscribe.on-sync-failed.email.gmail: team@example.com   # email.<service-name>
+    notifications.argoproj.io/subscribe.on-health-degraded.googlechat: ""          # webhook services: empty recipient
+    notifications.argoproj.io/subscribe.on-sync-failed.teams: devops               # key from service.teams recipientUrls
+spec:
+  project: myargoproject-dev
+  source: {repoURL: "https://github.com/<org>/<gitops-repo>.git", targetRevision: main, path: k8-manifest}
+  destination: {server: "https://kubernetes.default.svc", namespace: fcoos}

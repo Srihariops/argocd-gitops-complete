@@ -1,0 +1,90 @@
+# ======================================================================
+# FILE   : notifications-cm.yaml
+# PURPOSE: All services, 3 templates, 3 triggers, global subscription.
+# APPLY  : kubectl apply -f notifications-cm.yaml
+# ======================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm           # fixed name
+  namespace: argocd
+data:
+  # ===================== SERVICES = WHERE =====================
+  service.slack: |
+    token: $slack-token
+  service.email.gmail: |                  # Gmail SMTP. SES: host email-smtp.<region>.amazonaws.com, port 587/465
+    host: smtp.gmail.com
+    port: 465
+    from: $email-username
+    username: $email-username
+    password: $email-password
+  service.webhook.googlechat: |           # Google Chat incoming webhook
+    url: $googlechat-webhook
+    headers:
+      - {name: Content-Type, value: application/json}
+  service.teams: |                        # Microsoft Teams
+    recipientUrls:
+      devops: $teams-webhook
+  service.telegram: |
+    token: $telegram-token
+  service.webhook.generic: |              # any HTTP endpoint (PagerDuty, Opsgenie, your API)
+    url: https://hooks.example.com/argocd
+    headers:
+      - {name: Authorization, value: Bearer $generic-webhook-token}
+
+  # ===================== TEMPLATES = WHAT =====================
+  template.app-deployed: |
+    message: "✅ {{.app.metadata.name}} deployed to {{.app.spec.destination.namespace}} (rev {{.app.status.sync.revision | trunc 7}})"
+    slack:
+      attachments: |
+        [{"title":"{{.app.metadata.name}}","color":"#18be52","fields":[
+          {"title":"Sync","value":"{{.app.status.sync.status}}","short":true},
+          {"title":"Health","value":"{{.app.status.health.status}}","short":true}]}]
+    email:
+      subject: "Deployed: {{.app.metadata.name}}"
+    webhook:
+      googlechat:
+        method: POST
+        body: |
+          {"text": "✅ {{.app.metadata.name}} deployed to {{.app.spec.destination.namespace}}"}
+    teams:
+      title: "Deployed {{.app.metadata.name}}"
+      themeColor: "#18be52"
+      text: "Health: {{.app.status.health.status}}"
+  template.app-failed: |
+    message: "❌ {{.app.metadata.name}} sync FAILED: {{.app.status.operationState.message}}"
+    slack:
+      attachments: |
+        [{"title":"{{.app.metadata.name}}","color":"#E96D76","text":"{{.app.status.operationState.message}}"}]
+    email:
+      subject: "FAILED: {{.app.metadata.name}}"
+    webhook:
+      googlechat:
+        method: POST
+        body: |
+          {"text": "❌ {{.app.metadata.name}} sync failed: {{.app.status.operationState.message}}"}
+    teams:
+      title: "FAILED {{.app.metadata.name}}"
+      themeColor: "#E96D76"
+      text: "{{.app.status.operationState.message}}"
+  template.app-degraded: |
+    message: "⚠️ {{.app.metadata.name}} is DEGRADED"
+    slack:
+      attachments: |
+        [{"title":"{{.app.metadata.name}}","color":"#f4c030","text":"Health: {{.app.status.health.status}}"}]
+
+  # ===================== TRIGGERS = WHEN =====================
+  trigger.on-sync-succeeded: |
+    - when: app.status.operationState.phase in ['Succeeded']
+      send: [app-deployed]
+  trigger.on-sync-failed: |
+    - when: app.status.operationState.phase in ['Error', 'Failed']
+      send: [app-failed]
+  trigger.on-health-degraded: |
+    - when: app.status.health.status == 'Degraded'
+      send: [app-degraded]
+
+  # ============ GLOBAL SUBSCRIPTION: every app gets these (no annotation needed) ============
+  subscriptions: |
+    - recipients: [slack:devops-alerts]
+      triggers: [on-sync-failed, on-health-degraded]

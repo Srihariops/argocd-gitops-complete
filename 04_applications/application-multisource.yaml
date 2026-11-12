@@ -1,0 +1,25 @@
+# ======================================================================
+# FILE   : application-multisource.yaml
+# PURPOSE: Public chart + your values file from Git.
+# APPLY  : kubectl apply -f application-multisource.yaml
+# ======================================================================
+# Multiple sources: public Helm chart + YOUR values file from Git (clean separation, no chart copy).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: nginx-multisource, namespace: argocd}
+spec:
+  project: myargoproject-dev
+  sources:
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: nginx
+      targetRevision: 18.2.0          # pin the chart version
+      helm:
+        valueFiles:
+          - $values/envs/dev/nginx-values.yaml   # $values = the source below
+    - repoURL: https://github.com/<org>/<gitops-repo>.git
+      targetRevision: main
+      ref: values                     # name used in $values above
+  destination: {server: https://kubernetes.default.svc, namespace: nginx-dev}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]

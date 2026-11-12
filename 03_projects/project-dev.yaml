@@ -1,7 +1,6 @@
 # ======================================================================
 # FILE   : project-dev.yaml
-# PURPOSE: Relaxed project for dev: one repo, only *-dev namespaces.
-# CHANGE : sourceRepos URL and destinations namespace pattern.
+# PURPOSE: Relaxed dev project.
 # APPLY  : kubectl apply -f project-dev.yaml
 # ======================================================================
 apiVersion: argoproj.io/v1alpha1

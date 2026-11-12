@@ -1,0 +1,30 @@
+# ======================================================================
+# FILE   : rollout-canary.yaml
+# PURPOSE: Canary 20% → 50% → 100% with pauses.
+# APPLY  : kubectl apply -f rollout-canary.yaml
+# ======================================================================
+# Canary release: 20% -> pause -> 50% -> pause -> 100%. Replaces a Deployment.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: web
+spec:
+  replicas: 4
+  selector:
+    matchLabels: {app: web}
+  template:
+    metadata:
+      labels: {app: web}
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27
+          ports: [{containerPort: 80}]
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {duration: 2m}        # watch metrics/logs; or "pause: {}" = wait for manual promote
+        - setWeight: 50
+        - pause: {duration: 2m}
+        # then 100% automatically. Abort = instant rollback to stable.

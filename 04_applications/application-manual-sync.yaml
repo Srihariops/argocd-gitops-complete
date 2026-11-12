@@ -1,0 +1,27 @@
+# ======================================================================
+# FILE   : application-manual-sync.yaml
+# PURPOSE: Production style, manual sync.
+# APPLY  : kubectl apply -f application-manual-sync.yaml
+# ======================================================================
+# Production style: NO automated block => a human (or pipeline) presses Sync.
+# Add sync windows in the Project (folder 03) for extra safety.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-prod, namespace: argocd}
+spec:
+  project: myargoproject-prod
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: k8-manifest/web/overlays/prod
+  destination: {server: https://kubernetes.default.svc, namespace: web-prod}
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+  # Optional: pick which diffs to ignore
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers: [/spec/replicas]  # HPA owns replicas

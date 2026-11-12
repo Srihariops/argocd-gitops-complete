@@ -1,0 +1,31 @@
+# ======================================================================
+# FILE   : argocd-cm-github-dex.yaml
+# PURPOSE: Dex GitHub connector: org, teams.
+# APPLY  : kubectl apply -f argocd-cm-github-dex.yaml
+# ======================================================================
+# GitHub login through Dex. Groups = GitHub TEAMS, written as  <org>:<team-slug>.
+# 1) GitHub Org -> Settings -> Developer settings -> OAuth Apps -> New. Callback: https://argocd.example.com/api/dex/callback
+# 2) Org -> Settings -> Third-party access: APPROVE the OAuth app (else teams are not visible)
+# 3) Store clientID/secret (see github-oauth-secret.yaml) and restart dex + server
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels: {app.kubernetes.io/name: argocd-cm, app.kubernetes.io/part-of: argocd}
+data:
+  url: https://argocd.example.com
+  dex.config: |
+    connectors:
+      - type: github
+        id: github
+        name: GitHub                          # login button text
+        config:
+          clientID: $argocd-sso-secret:github.clientID
+          clientSecret: $argocd-sso-secret:github.clientSecret
+          orgs:
+            - name: my-org                    # only members of this org can log in
+              # teams: [devops, developers]   # optional: restrict to these teams only
+          loadAllGroups: false                # true = return ALL teams of the user
+          teamNameField: slug                 # group string = my-org:devops
+          useLoginAsID: false

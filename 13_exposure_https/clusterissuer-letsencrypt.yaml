@@ -1,0 +1,20 @@
+# ======================================================================
+# FILE   : clusterissuer-letsencrypt.yaml
+# PURPOSE: Let's Encrypt issuer (use staging server first).
+# APPLY  : kubectl apply -f clusterissuer-letsencrypt.yaml
+# ======================================================================
+# ClusterIssuer = how cert-manager gets certificates (HTTP-01 challenge via NGINX).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory      # staging: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: you@example.com                                       # expiry warnings go here
+    privateKeySecretRef:
+      name: letsencrypt-prod-key                                 # account key stored here
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx

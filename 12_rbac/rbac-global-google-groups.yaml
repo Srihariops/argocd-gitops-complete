@@ -1,0 +1,47 @@
+# ======================================================================
+# FILE   : rbac-global-google-groups.yaml
+# PURPOSE: Roles sre / junior-devops / developer bound to Google groups.
+# APPLY  : kubectl apply -f rbac-global-google-groups.yaml
+# ======================================================================
+# APPROACH A: GLOBAL RBAC in argocd-rbac-cm with Google Workspace groups (from Dex).
+# Policy line : p, <role>, <resource>, <action>, <project>/<application>, <allow|deny>
+# Group line  : g, <group-or-user>, <role>
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm                    # fixed name
+  namespace: argocd
+  labels: {app.kubernetes.io/name: argocd-rbac-cm, app.kubernetes.io/part-of: argocd}
+data:
+  policy.default: ""                      # no mapped group = NO access. (role:readonly = everyone can look)
+  scopes: "[groups]"                      # token claim that holds groups. Direct OIDC Google: "[email]"
+  policy.csv: |
+    # ---------- SRE: operate everything, change nothing structural ----------
+    p, role:sre, applications, get,      */*, allow
+    p, role:sre, applications, sync,     */*, allow
+    p, role:sre, applications, action/*, */*, allow          # restart etc.
+    p, role:sre, logs,         get,      */*, allow          # Argo CD 3: logs need their own permission
+    p, role:sre, projects,     get,      *,   allow
+    p, role:sre, clusters,     get,      *,   allow
+    p, role:sre, repositories, get,      *,   allow
+
+    # ---------- Junior DevOps: view all, act on dev only, never delete ----------
+    p, role:junior-devops, applications, get,      */*,                  allow
+    p, role:junior-devops, applications, sync,     myargoproject-dev/*,  allow
+    p, role:junior-devops, applications, action/*, myargoproject-dev/*,  allow
+    p, role:junior-devops, applications, delete,   */*,                  deny   # deny always wins
+    p, role:junior-devops, logs,         get,      */*,                  allow
+    p, role:junior-devops, projects,     get,      *,                    allow
+
+    # ---------- Developer: see all, deploy dev only, logs for dev only ----------
+    p, role:developer, applications, get,  */*,                 allow
+    p, role:developer, applications, sync, myargoproject-dev/*, allow
+    p, role:developer, applications, action/apps/Deployment/restart, myargoproject-dev/*, allow
+    p, role:developer, logs,         get,  myargoproject-dev/*, allow
+    p, role:developer, projects,     get,  *,                   allow
+
+    # ---------- Group bindings (Google groups arrive as e-mail addresses) ----------
+    g, argocd-devops@example.com,        role:admin       # built-in: everything
+    g, argocd-sre@example.com,           role:sre
+    g, argocd-junior-devops@example.com, role:junior-devops
+    g, argocd-developers@example.com,    role:developer

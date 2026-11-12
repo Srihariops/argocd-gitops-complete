@@ -1,0 +1,37 @@
+# ======================================================================
+# FILE   : helm-values.yaml
+# PURPOSE: Production-leaning values.
+# APPLY  : helm install ... -f helm-values.yaml
+# ======================================================================
+# Helm values for the argo/argo-cd chart (single-cluster, production-leaning).
+global:
+  domain: argocd.example.com            # your Argo CD host (no https://)
+
+configs:
+  params:
+    server.insecure: true               # TLS ends at ingress/ALB, server speaks HTTP
+  cm:
+    url: https://argocd.example.com     # external URL (required for SSO)
+    admin.enabled: "true"               # set "false" AFTER SSO works
+    timeout.reconciliation: 180s        # Git poll interval
+    application.resourceTrackingMethod: annotation
+    exec.enabled: "false"               # no terminal into pods from the UI
+
+controller:
+  replicas: 1                           # raise only when sharding many clusters
+  metrics: {enabled: true, serviceMonitor: {enabled: false}}   # true if Prometheus Operator exists
+
+server:
+  replicas: 2
+  metrics: {enabled: true, serviceMonitor: {enabled: false}}
+
+repoServer:
+  replicas: 2
+  metrics: {enabled: true, serviceMonitor: {enabled: false}}
+
+dex:
+  enabled: true                         # needed for Google/GitHub SSO via Dex
+notifications:
+  enabled: true
+applicationSet:
+  enabled: true

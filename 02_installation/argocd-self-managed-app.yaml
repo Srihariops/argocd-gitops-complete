@@ -1,0 +1,23 @@
+# ======================================================================
+# FILE   : argocd-self-managed-app.yaml
+# PURPOSE: After install, Argo CD manages its own install from Git.
+# APPLY  : kubectl apply -f argocd-self-managed-app.yaml
+# ======================================================================
+# After install, let Argo CD manage ITSELF from Git (upgrade = change the version in Git).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: argocd/install/kustomize      # the kustomize folder from this guide
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated: {prune: false, selfHeal: true}   # prune false: never delete Argo CD's own pieces by accident
+    syncOptions: [ServerSideApply=true]         # needed: Argo CD CRDs are large

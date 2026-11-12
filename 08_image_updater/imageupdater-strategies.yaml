@@ -1,0 +1,38 @@
+# ======================================================================
+# FILE   : imageupdater-strategies.yaml
+# PURPOSE: All four strategies side by side.
+# APPLY  : kubectl apply -f imageupdater-strategies.yaml
+# ======================================================================
+# One file, four strategies. Choose per image with commonUpdateSettings on the image.
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: strategies-demo
+  namespace: argocd
+spec:
+  namespace: argocd
+  writeBackConfig:
+    method: "git:secret:argocd/argocd-image-updater-git-creds"
+    gitConfig: {branch: main, writeBackTarget: kustomization}
+  applicationRefs:
+    - namePattern: demo-*
+      images:
+        - alias: semver-img                 # releases like v1.4.2: picks the HIGHEST version
+          imageName: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/a
+          commonUpdateSettings:
+            updateStrategy: semver
+            allowTags: "regexp:^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        - alias: build-img                  # Jenkins build numbers: picks the most recently PUSHED
+          imageName: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/b
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: "regexp:^[0-9]{3}$"
+        - alias: digest-img                 # mutable tag (e.g. "latest"): redeploys when the digest changes
+          imageName: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/c:latest
+          commonUpdateSettings:
+            updateStrategy: digest
+        - alias: date-img                   # tags like 2026-11-12: last in alphabetical order
+          imageName: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/d
+          commonUpdateSettings:
+            updateStrategy: alphabetical
+            allowTags: "regexp:^[0-9]{4}-[0-9]{2}-[0-9]{2}$"

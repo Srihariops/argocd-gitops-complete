@@ -1,0 +1,36 @@
+# ======================================================================
+# FILE   : applicationset-environments.yaml
+# PURPOSE: One definition creates all environments; prod stays manual.
+# APPLY  : kubectl apply -f applicationset-environments.yaml
+# ======================================================================
+# APPROACH C: ONE ApplicationSet creates dev, staging and prod from a list. Add an environment = add a list line.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata: {name: web-envs, namespace: argocd}
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+          - {env: dev,     project: myargoproject-dev,  cluster: https://kubernetes.default.svc, auto: "true"}
+          - {env: staging, project: myargoproject-dev,  cluster: https://kubernetes.default.svc, auto: "true"}
+          - {env: prod,    project: myargoproject-prod, cluster: https://kubernetes.default.svc, auto: "false"}
+  template:
+    metadata:
+      name: "web-{{.env}}"
+    spec:
+      project: "{{.project}}"
+      source:
+        repoURL: https://github.com/<org>/<gitops-repo>.git
+        targetRevision: main
+        path: "k8-manifest/web/overlays/{{.env}}"
+      destination: {server: "{{.cluster}}", namespace: "web-{{.env}}"}
+      syncPolicy:
+        syncOptions: [CreateNamespace=true]
+  # Make prod manual: ApplicationSet cannot conditionally omit 'automated' simply, so use templatePatch:
+  templatePatch: |
+    {{- if eq .auto "true" }}
+    spec:
+      syncPolicy:
+        automated: {prune: true, selfHeal: true}
+    {{- end }}

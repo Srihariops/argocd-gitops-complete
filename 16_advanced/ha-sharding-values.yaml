@@ -1,0 +1,32 @@
+# ======================================================================
+# FILE   : ha-sharding-values.yaml
+# PURPOSE: HA, sharding, autoscaling, tuning.
+# APPLY  : merge into helm-values.yaml
+# ======================================================================
+# SCALE & HA (Helm values). Use when you have many apps/clusters.
+controller:
+  replicas: 3                               # SHARDS: each replica owns a share of the clusters
+  env:
+    - {name: ARGOCD_CONTROLLER_REPLICAS, value: "3"}   # must equal replicas
+  resources: {requests: {cpu: 500m, memory: 1Gi}, limits: {memory: 2Gi}}
+repoServer:
+  replicas: 3
+  autoscaling: {enabled: true, minReplicas: 2, maxReplicas: 6}
+  resources: {requests: {cpu: 250m, memory: 512Mi}}
+server:
+  replicas: 3
+  autoscaling: {enabled: true, minReplicas: 2, maxReplicas: 5}
+redis-ha: {enabled: true}
+redis: {enabled: false}
+configs:
+  params:
+    controller.status.processors: 50        # more parallel status checks
+    controller.operation.processors: 25
+    reposerver.parallelism.limit: 10
+    controller.sharding.algorithm: round-robin
+  cm:
+    timeout.reconciliation: 300s            # poll less often (use webhooks instead)
+    resource.exclusions: |
+      - apiGroups: ["", "events.k8s.io"]
+        kinds: ["Event"]                    # less noise, less memory
+        clusters: ["*"]

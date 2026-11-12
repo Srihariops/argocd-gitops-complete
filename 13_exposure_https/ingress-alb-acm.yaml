@@ -1,0 +1,35 @@
+# ======================================================================
+# FILE   : ingress-alb-acm.yaml
+# PURPOSE: ALB ingress with ACM certificate, redirect, CIDR limits.
+# APPLY  : kubectl apply -f ingress-alb-acm.yaml
+# ======================================================================
+# APPROACH B: AWS Load Balancer Controller + ACM certificate (no cert-manager, no nginx).
+# Needs: AWS Load Balancer Controller installed, an ACM certificate for argocd.example.com (DNS-validated),
+#        Argo CD with server.insecure: true (ALB terminates TLS, talks HTTP to the pod).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server
+  namespace: argocd
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing            # or "internal" for VPN-only access
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"                # http -> https
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:<ACCOUNT_ID>:certificate/<ID>
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    # alb.ingress.kubernetes.io/inbound-cidrs: 203.0.113.0/24    # restrict who can reach it
+    # alb.ingress.kubernetes.io/group.name: shared-alb           # share one ALB between apps (saves cost)
+spec:
+  ingressClassName: alb
+  rules:
+    - host: argocd.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: argocd-server, port: {number: 80}}
+# Then create a Route 53 record argocd.example.com -> the ALB DNS name (alias).
+# CLI through ALB: use  argocd login argocd.example.com --grpc-web   (simple), or a second GRPC ingress:

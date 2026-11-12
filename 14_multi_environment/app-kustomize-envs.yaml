@@ -1,0 +1,37 @@
+# ======================================================================
+# FILE   : app-kustomize-envs.yaml
+# PURPOSE: Three Applications: dev/staging auto, prod manual.
+# APPLY  : kubectl apply -f app-kustomize-envs.yaml
+# ======================================================================
+# APPROACH A: three Applications, one per Kustomize overlay.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-dev, namespace: argocd}
+spec:
+  project: myargoproject-dev
+  source: {repoURL: "https://github.com/<org>/<gitops-repo>.git", targetRevision: main, path: k8-manifest/web/overlays/dev}
+  destination: {server: "https://kubernetes.default.svc", namespace: web-dev}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}               # dev: fully automatic
+    syncOptions: [CreateNamespace=true]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-staging, namespace: argocd}
+spec:
+  project: myargoproject-dev
+  source: {repoURL: "https://github.com/<org>/<gitops-repo>.git", targetRevision: main, path: k8-manifest/web/overlays/staging}
+  destination: {server: "https://kubernetes.default.svc", namespace: web-staging}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-prod, namespace: argocd}
+spec:
+  project: myargoproject-prod
+  source: {repoURL: "https://github.com/<org>/<gitops-repo>.git", targetRevision: main, path: k8-manifest/web/overlays/prod}
+  destination: {server: "https://kubernetes.default.svc", namespace: web-prod}
+  syncPolicy:                                              # prod: NO automated block = human presses Sync
+    syncOptions: [CreateNamespace=true]

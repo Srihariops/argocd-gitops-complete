@@ -1,0 +1,26 @@
+# ======================================================================
+# FILE   : argocd-cm-oidc-google.yaml
+# PURPOSE: Built-in OIDC against Google; email-based RBAC.
+# APPLY  : kubectl apply -f argocd-cm-oidc-google.yaml
+# ======================================================================
+# GOOGLE WITHOUT DEX (simplest). Uses Argo CD's built-in OIDC.
+# TRADE-OFF: Google tokens have NO group claim, so RBAC must use E-MAIL addresses (g, alice@example.com, role:x).
+# Use Dex + service account (argocd-cm-google-dex.yaml) if you want Google GROUP based RBAC.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels: {app.kubernetes.io/name: argocd-cm, app.kubernetes.io/part-of: argocd}
+data:
+  url: https://argocd.example.com
+  oidc.config: |
+    name: Google
+    issuer: https://accounts.google.com
+    clientID: $argocd-sso-secret:google.clientID
+    clientSecret: $argocd-sso-secret:google.clientSecret
+    requestedScopes: [openid, profile, email]
+    # Optional: only your domain (also set "Internal" user type on the Google OAuth consent screen)
+    # requestedIDTokenClaims: {"hd": {"essential": true}}
+# Redirect URI in Google Cloud: https://argocd.example.com/auth/callback   (note: /auth/callback, NOT /api/dex/callback)
+# Disable Dex when not used:  Helm dex.enabled: false  /  kubectl -n argocd scale deploy argocd-dex-server --replicas=0

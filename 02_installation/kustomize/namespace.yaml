@@ -1,0 +1,8 @@
+# ======================================================================
+# FILE   : kustomize/namespace.yaml
+# PURPOSE: The argocd namespace.
+# ======================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd

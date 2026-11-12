@@ -1,0 +1,51 @@
+# ======================================================================
+# FILE   : ecr-C-cronjob-irsa.yaml
+# PURPOSE: Same CronJob, IAM role instead of keys.
+# APPLY  : kubectl apply -f ecr-C-cronjob-irsa.yaml
+# ======================================================================
+# APPROACH C (BEST on EKS): same CronJob but NO access keys. The pod gets AWS permissions from an IAM ROLE (IRSA).
+# Setup once:
+#   1) IAM role with the ECR policy (ecr:GetAuthorizationToken) and a trust policy for this ServiceAccount
+#      (eksctl create iamserviceaccount --cluster <c> --namespace argocd --name ecr-token-refresher \
+#         --attach-policy-arn arn:aws:iam::<ACCOUNT_ID>:policy/ecr-token --approve)
+#   2) Keep the Role/RoleBinding objects from ecr-B-cronjob-access-key.yaml (kubectl permissions are separate)
+# EKS Pod Identity works the same way: associate the role with the ServiceAccount, no annotation needed.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecr-token-refresher
+  namespace: argocd
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/ecr-token-refresher   # IRSA link
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecr-token-refresh
+  namespace: argocd
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: ecr-token-refresher     # AWS creds injected automatically, nothing in env
+          restartPolicy: OnFailure
+          containers:
+            - name: refresh
+              image: alpine/k8s:1.30.2
+              env:
+                - {name: AWS_DEFAULT_REGION, value: ap-south-1}
+                - {name: ECR_REGISTRY, value: "<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com"}
+              command: [sh, -c]
+              args:
+                - |
+                  set -e
+                  TOKEN=$(aws ecr get-login-password)
+                  for t in argocd/argocd-image-updater-secret fcoos/ecr-pull-secret; do
+                    ns=${t%/*}; name=${t#*/}
+                    kubectl create secret docker-registry "$name" -n "$ns" \
+                      --docker-server="$ECR_REGISTRY" --docker-username=AWS --docker-password="$TOKEN" \
+                      --dry-run=client -o yaml | kubectl apply -f -
+                  done

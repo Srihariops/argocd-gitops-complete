@@ -1,0 +1,10 @@
+# ======================================================================
+# FILE   : helm/values.yaml
+# PURPOSE: Shared layer.
+# ======================================================================
+# Shared Helm values (the chart defaults live in charts/web/values.yaml; this is the common layer)
+replicaCount: 1
+image: {repository: nginx, tag: "1.27"}
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: 200m, memory: 128Mi}

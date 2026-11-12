@@ -1,0 +1,23 @@
+# ======================================================================
+# FILE   : repo-https-token.yaml
+# PURPOSE: Login for one private repo with a read-only token.
+# APPLY  : kubectl apply -f repo-https-token.yaml
+# ======================================================================
+# Tells Argo CD HOW to log in to ONE private Git repo.
+# DO NOT commit real values. Use Sealed Secrets / External Secrets / SOPS.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: repo-gitops-https                # any name (lowercase, no underscores)
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository   # THE KEY LABEL: without it Argo CD ignores this Secret
+stringData:
+  type: git                           # repository type
+  name: gitops-repo                   # friendly name in the UI
+  project: myargoproject-dev          # optional: only this project can use the repo. Remove = all projects
+  url: https://github.com/<org>/<gitops-repo>.git   # must equal Application.spec.source.repoURL
+  username: <github-username>
+  password: <GITHUB_READ_ONLY_TOKEN>  # fine-grained PAT, Contents: read-only
+  # insecure: "true"                  # only for self-signed TLS. NOT needed for GitHub
+  # enableLfs: "true"                 # only if the repo uses Git LFS

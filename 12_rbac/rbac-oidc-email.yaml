@@ -1,0 +1,18 @@
+# ======================================================================
+# FILE   : rbac-oidc-email.yaml
+# PURPOSE: E-mail based (Google direct OIDC) and Azure GUID example.
+# APPLY  : kubectl apply -f rbac-oidc-email.yaml
+# ======================================================================
+# APPROACH: Google DIRECT OIDC has no groups => bind individual E-MAILS (or Keycloak/Okta/Azure group claims).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+data:
+  scopes: "[email]"                       # use "[groups]" for Keycloak/Okta; Azure groups are GUIDs
+  policy.default: ""
+  policy.csv: |
+    g, alice@example.com,   role:admin
+    g, bob@example.com,     role:readonly
+    # Azure AD example (group object id):  g, 7c9f0a8e-1111-2222-3333-444455556666, role:admin

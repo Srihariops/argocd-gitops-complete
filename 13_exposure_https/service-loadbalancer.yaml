@@ -1,0 +1,27 @@
+# ======================================================================
+# FILE   : service-loadbalancer.yaml
+# PURPOSE: NLB with optional ACM TLS and source ranges.
+# APPLY  : kubectl apply -f service-loadbalancer.yaml
+# ======================================================================
+# APPROACH D: simplest cloud exposure: a Service of type LoadBalancer (NLB on AWS). No ingress, no cert-manager.
+# TLS: Argo CD's own self-signed cert, or terminate TLS on the NLB with an ACM certificate (annotations below).
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-server-lb
+  namespace: argocd
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    # TLS on NLB with ACM:
+    # service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:ap-south-1:<ACCOUNT_ID>:certificate/<ID>
+    # service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    # service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: argocd-server
+  ports:
+    - {name: https, port: 443, targetPort: 8080}
+  # loadBalancerSourceRanges: ["203.0.113.0/24"]      # restrict by IP

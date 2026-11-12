@@ -1,0 +1,28 @@
+# ======================================================================
+# FILE   : kustomize/kustomization.yaml
+# PURPOSE: Official manifest pinned by version plus patches.
+# APPLY  : kubectl apply -k kustomize/ --server-side
+# ======================================================================
+# Install Argo CD with Kustomize: official manifest + your patches, all stored in Git.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+resources:
+  - namespace.yaml
+  # Pin a version! Pick from https://github.com/argoproj/argo-cd/releases
+  - https://raw.githubusercontent.com/argoproj/argo-cd/<ARGOCD_VERSION>/manifests/install.yaml
+  # HA instead:  .../<ARGOCD_VERSION>/manifests/ha/install.yaml
+patches:
+  - target: {kind: ConfigMap, name: argocd-cm}
+    patch: |-
+      - op: add
+        path: /data/url
+        value: https://argocd.example.com
+      - op: add
+        path: /data/timeout.reconciliation
+        value: 180s
+  - target: {kind: ConfigMap, name: argocd-cmd-params-cm}
+    patch: |-
+      - op: add
+        path: /data/server.insecure
+        value: "true"

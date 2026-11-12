@@ -1,0 +1,52 @@
+# ======================================================================
+# FILE   : hooks-and-waves.yaml
+# PURPOSE: Namespace first, config next, migration PreSync, smoke test PostSync.
+# APPLY  : put in the app folder in Git
+# ======================================================================
+# Ordering with sync waves + a PreSync hook (DB migration). Put these in your app folder.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: web-dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"          # wave -1: first
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-config
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"           # wave 0: config before the app
+data: {LOG_LEVEL: info}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  annotations:
+    argocd.argoproj.io/hook: PreSync            # runs BEFORE the sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded   # clean up when done
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: busybox:1.36
+          command: [sh, -c, "echo running migrations"]
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: smoke-test
+  annotations:
+    argocd.argoproj.io/hook: PostSync           # after everything is healthy
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: test
+          image: busybox:1.36
+          command: [sh, -c, "echo smoke ok"]

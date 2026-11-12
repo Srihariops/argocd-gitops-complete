@@ -1,0 +1,32 @@
+# ======================================================================
+# FILE   : imageupdater-git.yaml
+# PURPOSE: ImageUpdater CR, write-back git to kustomization (production).
+# APPLY  : kubectl apply -f imageupdater-git.yaml
+# ======================================================================
+# WRITE-BACK = GIT (recommended for production). The new tag is committed to the repo.
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: fcoos-image-updater
+  namespace: argocd
+spec:
+  namespace: argocd                       # namespace where the Applications live
+  writeBackConfig:
+    method: "git:secret:argocd/argocd-image-updater-git-creds"   # git:secret:<namespace>/<secret-with-username+password or sshPrivateKey>
+    gitConfig:
+      branch: main                        # branch to commit to (use master if that is yours)
+      writeBackTarget: kustomization      # edit images: in kustomization.yaml of the Application path
+      # repository: https://github.com/<org>/<gitops-repo>.git   # optional: if different from the Application source
+  commonUpdateSettings:
+    updateStrategy: newest-build          # semver | digest | newest-build | alphabetical
+    forceUpdate: false
+    allowTags: "regexp:^[0-9]{3}$"        # only 3-digit Jenkins tags 001..999
+    # ignoreTags: ["latest", "regexp:.*-rc.*"]
+    # pullSecret: "pullsecret:argocd/argocd-image-updater-secret"   # registry login (verify field name in your version)
+  applicationRefs:
+    - namePattern: fcoos-insights         # Application name (wildcards ok: "fcoos-*")
+      images:
+        - alias: fcoos-frontend           # any short unique name
+          imageName: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/frontend   # no tag
+        - alias: fcoos-posts
+          imageName: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/posts

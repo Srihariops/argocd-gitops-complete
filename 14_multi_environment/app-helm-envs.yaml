@@ -1,0 +1,22 @@
+# ======================================================================
+# FILE   : app-helm-envs.yaml
+# PURPOSE: Application using shared + env value files.
+# APPLY  : kubectl apply -f app-helm-envs.yaml
+# ======================================================================
+# APPROACH B: ONE Helm chart, a values file per environment.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-helm-prod, namespace: argocd}
+spec:
+  project: myargoproject-prod
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: charts/web
+    helm:
+      valueFiles:
+        - ../../envs/values.yaml       # shared
+        - ../../envs/prod.yaml         # env specific (last wins)
+  destination: {server: "https://kubernetes.default.svc", namespace: web-prod}
+  syncPolicy:
+    syncOptions: [CreateNamespace=true]

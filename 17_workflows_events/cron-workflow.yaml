@@ -1,0 +1,21 @@
+# ======================================================================
+# FILE   : cron-workflow.yaml
+# PURPOSE: Scheduled job, 02:00 daily.
+# APPLY  : kubectl apply -n argo -f cron-workflow.yaml
+# ======================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: nightly-job
+spec:
+  schedule: "0 2 * * *"               # every day 02:00
+  timezone: Asia/Kolkata
+  concurrencyPolicy: Forbid           # do not start if the last run is still going
+  workflowSpec:
+    entrypoint: job
+    templates:
+      - name: job
+        container:
+          image: alpine:3.20
+          command: [sh, -c]
+          args: ["echo nightly cleanup"]

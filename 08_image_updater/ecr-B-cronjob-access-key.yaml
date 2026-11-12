@@ -1,0 +1,75 @@
+# ======================================================================
+# FILE   : ecr-B-cronjob-access-key.yaml
+# PURPOSE: ServiceAccount, Roles, CronJob (every 6 h).
+# APPLY  : kubectl apply -f ecr-B-cronjob-access-key.yaml
+# ======================================================================
+# APPROACH B: in-cluster CronJob + access keys. Replaces the laptop/server cron. Refreshes every 6 h.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: ecr-token-refresher, namespace: argocd}
+---
+# Permission to write the two docker-registry Secrets (one Role per namespace it touches)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: ecr-token-refresher, namespace: argocd}
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, create, patch, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: ecr-token-refresher, namespace: argocd}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: ecr-token-refresher}
+subjects: [{kind: ServiceAccount, name: ecr-token-refresher, namespace: argocd}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: ecr-token-refresher, namespace: fcoos}      # the APP namespace that needs ecr-pull-secret
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, create, patch, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: ecr-token-refresher, namespace: fcoos}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: ecr-token-refresher}
+subjects: [{kind: ServiceAccount, name: ecr-token-refresher, namespace: argocd}]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecr-token-refresh
+  namespace: argocd
+spec:
+  schedule: "0 */6 * * *"                 # every 6 hours (token lives 12 h)
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: ecr-token-refresher
+          restartPolicy: OnFailure
+          containers:
+            - name: refresh
+              image: alpine/k8s:1.30.2    # any image that has BOTH kubectl and aws-cli
+              envFrom:
+                - secretRef: {name: aws-ecr-credentials}   # AWS_ACCESS_KEY_ID / SECRET / REGION
+              env:
+                - {name: ECR_REGISTRY, value: "<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com"}
+              command: [sh, -c]
+              args:
+                - |
+                  set -e
+                  TOKEN=$(aws ecr get-login-password --region "$AWS_DEFAULT_REGION")
+                  for t in argocd/argocd-image-updater-secret fcoos/ecr-pull-secret; do
+                    ns=${t%/*}; name=${t#*/}
+                    kubectl create secret docker-registry "$name" -n "$ns" \
+                      --docker-server="$ECR_REGISTRY" --docker-username=AWS --docker-password="$TOKEN" \
+                      --dry-run=client -o yaml | kubectl apply -f -
+                    echo "updated $ns/$name"
+                  done

@@ -1,0 +1,27 @@
+# ======================================================================
+# FILE   : application-helm-git.yaml
+# PURPOSE: Helm chart in Git + per-env values + parameter override.
+# APPLY  : kubectl apply -f application-helm-git.yaml
+# ======================================================================
+# Helm chart that lives INSIDE your Git repo (path = chart folder), values per environment.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: web-helm-git, namespace: argocd}
+spec:
+  project: myargoproject-dev
+  source:
+    repoURL: https://github.com/<org>/<gitops-repo>.git
+    targetRevision: main
+    path: charts/web
+    helm:
+      releaseName: web
+      valueFiles:
+        - values.yaml                 # relative to the chart path
+        - ../../envs/dev/values.yaml  # env override kept in Git
+      parameters:
+        - name: image.tag             # single override (Image Updater uses this with write-back: argocd)
+          value: "007"
+  destination: {server: https://kubernetes.default.svc, namespace: web-dev}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]

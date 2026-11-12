@@ -1,0 +1,31 @@
+# ======================================================================
+# FILE   : imageupdater-git-helm.yaml
+# PURPOSE: Git write-back into a Helm values file.
+# APPLY  : kubectl apply -f imageupdater-git-helm.yaml
+# ======================================================================
+# WRITE-BACK = GIT for a HELM chart: the tag is written into a values file instead of kustomization.yaml.
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: web-helm-updater
+  namespace: argocd
+spec:
+  namespace: argocd
+  writeBackConfig:
+    method: "git:secret:argocd/argocd-image-updater-git-creds"
+    gitConfig:
+      branch: main
+      writeBackTarget: "helmvalues:/envs/dev/image-values.yaml"   # file (path from repo root) the updater creates/edits
+  commonUpdateSettings:
+    updateStrategy: semver
+    allowTags: "regexp:^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+  applicationRefs:
+    - namePattern: web-helm-git
+      images:
+        - alias: web
+          imageName: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/web
+          # Tell it which Helm keys hold the image name and tag in your chart:
+          manifestTargets:
+            helm:
+              name: image.repository
+              tag: image.tag

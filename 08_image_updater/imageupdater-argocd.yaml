@@ -1,0 +1,24 @@
+# ======================================================================
+# FILE   : imageupdater-argocd.yaml
+# PURPOSE: Write-back to Argo CD only (no Git commit).
+# APPLY  : kubectl apply -f imageupdater-argocd.yaml
+# ======================================================================
+# WRITE-BACK = ARGOCD. The tag is set as a parameter override on the LIVE Application. Nothing is committed.
+# Good for labs/dev. Weakness: if the Application is deleted/recreated the override is lost, Git does not show the tag.
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: dev-image-updater
+  namespace: argocd
+spec:
+  namespace: argocd
+  writeBackConfig:
+    method: argocd                        # no Git credentials needed
+  commonUpdateSettings:
+    updateStrategy: newest-build
+    allowTags: "regexp:^[0-9]{3}$"
+  applicationRefs:
+    - namePattern: mygitops-application-dev-first
+      images:
+        - alias: nginx
+          imageName: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/nginx

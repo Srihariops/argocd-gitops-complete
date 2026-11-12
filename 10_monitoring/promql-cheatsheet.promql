@@ -1,0 +1,11 @@
+# ======================================================================
+# FILE   : promql-cheatsheet.promql
+# PURPOSE: Useful PromQL.
+# APPLY  : paste into Prometheus/Grafana
+# ======================================================================
+count(argocd_app_info{sync_status="OutOfSync"})                              # apps out of sync
+count(argocd_app_info{health_status!="Healthy"})                             # apps not healthy
+sum by (name) (increase(argocd_app_sync_total{phase!="Succeeded"}[1h]))      # failed syncs per app
+histogram_quantile(0.95, sum by (le) (rate(argocd_app_reconcile_bucket[5m])))   # reconcile p95
+sum(rate(argocd_git_request_total[5m])) by (request_type)                    # Git request rate
+workqueue_depth{name=~"app_.*"}                                              # controller backlog

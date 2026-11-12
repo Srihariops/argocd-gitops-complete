@@ -1,0 +1,17 @@
+# ======================================================================
+# FILE   : kustomization-example.yaml
+# PURPOSE: The kustomization.yaml that the updater edits.
+# APPLY  : commit to your app folder
+# ======================================================================
+# Lives in the app folder (e.g. k8-manifest/kustomization.yaml). Image Updater edits the images: block.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - posts.yaml
+  - frontend.yaml
+images:                                  # one entry per image in ImageUpdater (same name, NO tag in name)
+  - name: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/frontend
+    newTag: "001"                        # keep quotes: "001" must stay a string
+  - name: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/fcoos/posts
+    newTag: "001"

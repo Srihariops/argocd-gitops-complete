@@ -1,0 +1,21 @@
+# ======================================================================
+# FILE   : repo-oci-ecr-helm.yaml
+# PURPOSE: OCI charts in ECR (token refresh needed).
+# APPLY  : kubectl apply -f repo-oci-ecr-helm.yaml
+# ======================================================================
+# Approach: Helm charts stored as OCI artifacts in AWS ECR.
+# The ECR password expires in 12h -> refresh it with the same CronJob as folder 08 (write it into this Secret).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: repo-ecr-oci
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: helm
+  name: ecr-charts
+  enableOCI: "true"                     # treat as an OCI registry
+  url: <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com   # no https:// for OCI
+  username: AWS
+  password: "<output of aws ecr get-login-password --region ap-south-1>"

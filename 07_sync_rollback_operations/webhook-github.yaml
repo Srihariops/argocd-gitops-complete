@@ -1,0 +1,20 @@
+# ======================================================================
+# FILE   : webhook-github.yaml
+# PURPOSE: GitHub/GitLab/Bitbucket webhook secret keys.
+# APPLY  : kubectl -n argocd patch secret argocd-secret ...
+# ======================================================================
+# Instant sync on git push (instead of waiting ~3 minutes). Works with GitHub, GitLab, Bitbucket.
+# 1) GitHub repo -> Settings -> Webhooks -> Add
+#      Payload URL : https://argocd.example.com/api/webhook
+#      Content type: application/json
+#      Secret      : the same value as below
+# 2) Patch the secret (do NOT kubectl apply a partial argocd-secret: use patch)
+#      kubectl -n argocd patch secret argocd-secret --type merge -p '{"stringData":{"webhook.github.secret":"<RANDOM>"}}'
+# Other keys: webhook.gitlab.secret, webhook.bitbucket.uuid, webhook.bitbucketserver.secret, webhook.azuredevops.password
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-secret
+  namespace: argocd
+stringData:
+  webhook.github.secret: "<RANDOM_STRING>"

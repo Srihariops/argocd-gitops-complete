@@ -1,0 +1,21 @@
+# ======================================================================
+# FILE   : prometheus-static-scrape.yaml
+# PURPOSE: scrape_configs for plain Prometheus.
+# APPLY  : add to prometheus.yml
+# ======================================================================
+# APPROACH C: plain Prometheus WITHOUT the Operator: add these jobs to prometheus.yml (scrape_configs).
+# Metrics ports: controller 8082, server 8083, repo-server 8084, applicationset 8080, notifications 9001.
+scrape_configs:
+  - job_name: argocd-application-controller
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["argocd-metrics.argocd.svc:8082"]
+  - job_name: argocd-server
+    static_configs:
+      - targets: ["argocd-server-metrics.argocd.svc:8083"]
+  - job_name: argocd-repo-server
+    static_configs:
+      - targets: ["argocd-repo-server.argocd.svc:8084"]
+  - job_name: argocd-notifications
+    static_configs:
+      - targets: ["argocd-notifications-controller-metrics.argocd.svc:9001"]

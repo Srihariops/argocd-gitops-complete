@@ -1,0 +1,30 @@
+# ======================================================================
+# FILE   : cluster-eks-iam.yaml
+# PURPOSE: IRSA role assumes a deployer role; no static token.
+# APPLY  : kubectl apply -f cluster-eks-iam.yaml
+# ======================================================================
+# Approach C: EKS with IAM (no long-lived token). Argo CD's IAM role (IRSA) assumes a role that is mapped in the target cluster.
+# Target cluster: add the role to aws-auth ConfigMap / EKS access entries as cluster admin (or narrower).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cluster-prod-eks-iam
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+stringData:
+  name: prod-eks
+  server: https://<EKS_API_ENDPOINT>
+  config: |
+    {
+      "awsAuthConfig": {
+        "clusterName": "<eks-cluster-name>",
+        "roleARN": "arn:aws:iam::<ACCOUNT_ID>:role/argocd-deployer"
+      },
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData": "<BASE64_CA_CERT>"
+      }
+    }
+# Needs: argocd-server and argocd-application-controller ServiceAccounts annotated with an IRSA role
+# that is allowed to sts:AssumeRole on arn:aws:iam::<ACCOUNT_ID>:role/argocd-deployer.

@@ -1,0 +1,29 @@
+# ======================================================================
+# FILE   : helm-values-metrics.yaml
+# PURPOSE: Enable metrics + ServiceMonitors in the Argo CD chart.
+# APPLY  : merge into helm-values.yaml
+# ======================================================================
+# APPROACH A: let the Argo CD Helm chart create the ServiceMonitors itself.
+# Add to helm-values.yaml (folder 02).
+controller:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      additionalLabels: {release: monitoring}   # must match your Prometheus release label
+server:
+  metrics:
+    enabled: true
+    serviceMonitor: {enabled: true, additionalLabels: {release: monitoring}}
+repoServer:
+  metrics:
+    enabled: true
+    serviceMonitor: {enabled: true, additionalLabels: {release: monitoring}}
+applicationSet:
+  metrics:
+    enabled: true
+    serviceMonitor: {enabled: true, additionalLabels: {release: monitoring}}
+notifications:
+  metrics:
+    enabled: true
+    serviceMonitor: {enabled: true, additionalLabels: {release: monitoring}}

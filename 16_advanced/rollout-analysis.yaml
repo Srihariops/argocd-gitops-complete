@@ -1,0 +1,39 @@
+# ======================================================================
+# FILE   : rollout-analysis.yaml
+# PURPOSE: Canary with Prometheus analysis (auto-abort).
+# APPLY  : kubectl apply -f rollout-analysis.yaml
+# ======================================================================
+# AUTOMATIC ROLLBACK: a canary that checks Prometheus and aborts by itself if errors rise.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata: {name: success-rate}
+spec:
+  metrics:
+    - name: success-rate
+      interval: 1m
+      count: 3
+      successCondition: result[0] >= 0.95                 # 95% requests must be OK
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://monitoring-kube-prometheus-prometheus.monitoring:9090
+          query: |
+            sum(rate(http_requests_total{app="web",code!~"5.."}[2m])) / sum(rate(http_requests_total{app="web"}[2m]))
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata: {name: web-analysis}
+spec:
+  replicas: 4
+  selector: {matchLabels: {app: web}}
+  template:
+    metadata: {labels: {app: web}}
+    spec:
+      containers: [{name: web, image: nginx:1.27, ports: [{containerPort: 80}]}]
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20
+        - analysis: {templates: [{templateName: success-rate}]}   # fail => automatic abort + rollback
+        - setWeight: 60
+        - pause: {duration: 2m}

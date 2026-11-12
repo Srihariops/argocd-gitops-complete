@@ -1,68 +1,52 @@
-# 03 · Projects (AppProject)
+# 🛡️ 03 · Projects (AppProject)
 
-> ### 🟢 Simple version
-> **In one line:** A Project is a fence around apps: allowed repos and namespaces only.
-> **Your goal:** Make one project for dev and a stricter one for prod.
-> **You will:** kubectl apply both project files → Check with argocd proj list
-> Need the full detail? Keep reading below. Otherwise jump to the files.
+> [!TIP]
+> A Project is the **security fence** around apps. One project per environment is the rule.
 
+## 1. What & why
+Without projects, any app can deploy anywhere. A project limits **which repos**, **which clusters/namespaces**, **which kinds**, **when** (sync windows) and **who** (roles).
 
-A **Project** is the security fence around apps. It limits:
-1. **Which Git repos** apps may use (`sourceRepos`)
-2. **Where** they may deploy (`destinations`)
-3. **Which cluster-wide kinds** they may create (`clusterResourceWhitelist`)
-4. **When** they may sync (`syncWindows`) and **who** can act (`roles`)
+**Use case:** developers may sync only `*-dev`; prod accepts only the platform repo, only `*-prod`, never on business hours.
 
+## 2. Architecture
 ```mermaid
 flowchart TB
-  subgraph argocd
-    P1[Project: dev] --> A1[app-dev]
-    P2[Project: staging] --> A2[app-stg]
-    P3[Project: prod<br/>locked down] --> A3[app-prod]
+  subgraph argocd namespace
+    PD[Project dev] --> AD[app-dev]
+    PP[Project prod<br/>strict + window] --> AP[app-prod]
   end
-  A1 --> N1[ns *-dev]
-  A2 --> N2[ns *-staging]
-  A3 --> N3[ns *-prod]
+  AD --> ND[ns *-dev]
+  AP --> NP[ns *-prod]
+  Repo[(allowed repo)] -.sourceRepos.-> PD
+  Repo -.sourceRepos.-> PP
 ```
 
-Rule of thumb: **one project per environment**. Always create Applications in a project (never `default` in production).
+## 3. Key values
+| Key | Meaning | Example |
+|---|---|---|
+| `sourceRepos` | Repos apps may use | `https://github.com/org/gitops.git` (avoid `*`) |
+| `destinations` | `server`/`name` + `namespace` allowed | `*-prod` |
+| `clusterResourceWhitelist` | Cluster-wide kinds allowed | `Namespace` |
+| `namespaceResourceBlacklist` | Kinds forbidden inside namespaces | `ResourceQuota` |
+| `syncWindows` | When syncing is allowed/denied | `deny 09:00-17:00` |
+| `roles` | Project-level permissions + SSO groups | `deployer` |
+| `orphanedResources.warn` | Warn about unmanaged objects | `true` |
 
-Files:
-- [project-dev.yaml](project-dev.yaml) – relaxed
-- [project-prod.yaml](project-prod.yaml) – strict, with sync window and roles
-
-```bash
-kubectl apply -f project-dev.yaml -f project-prod.yaml
-argocd proj list
-argocd proj get prod
-```
-
-
----
-
-## Files in this guide
-
-| # | File | Purpose | What you change |
+## 4. Choose your approach
+| | A · YAML | B · CLI | C · UI |
 |---|---|---|---|
-| 1 | [`project-dev.yaml`](project-dev.yaml) | Relaxed project for dev: one repo, only *-dev namespaces. | sourceRepos URL and destinations namespace pattern. |
-| 2 | [`project-prod.yaml`](project-prod.yaml) | Strict project for prod: sync window, blocked kinds, deployer role. | sourceRepos, namespace pattern, group email, sync window times. |
+| Repeatable / in Git | ✅ | ❌ | ❌ |
+| Speed for a test | ok | fast | fastest |
+| Use for | **production** | demos | learning |
 
----
-
-## The files, with explanations
-
-Every file has `#` comments on each important line. Replace anything in `<angle brackets>`.
-
-### File 1: `project-dev.yaml`
-**Purpose:** Relaxed project for dev: one repo, only *-dev namespaces.  
-**What you change:** sourceRepos URL and destinations namespace pattern.  
-**Apply:** `kubectl apply -f project-dev.yaml`
+## 5. Approach A · YAML (declarative)
+<details>
+<summary>📄 <b>project-dev.yaml</b> — Relaxed dev project.</summary>
 
 ```yaml
 # ======================================================================
 # FILE   : project-dev.yaml
-# PURPOSE: Relaxed project for dev: one repo, only *-dev namespaces.
-# CHANGE : sourceRepos URL and destinations namespace pattern.
+# PURPOSE: Relaxed dev project.
 # APPLY  : kubectl apply -f project-dev.yaml
 # ======================================================================
 apiVersion: argoproj.io/v1alpha1
@@ -90,16 +74,14 @@ spec:
     warn: true                       # warn about resources in these namespaces not managed by Argo CD
 ```
 
-### File 2: `project-prod.yaml`
-**Purpose:** Strict project for prod: sync window, blocked kinds, deployer role.  
-**What you change:** sourceRepos, namespace pattern, group email, sync window times.  
-**Apply:** `kubectl apply -f project-prod.yaml`
+</details>
+<details>
+<summary>📄 <b>project-prod.yaml</b> — Strict prod: sync window, blocked kinds, deployer role.</summary>
 
 ```yaml
 # ======================================================================
 # FILE   : project-prod.yaml
-# PURPOSE: Strict project for prod: sync window, blocked kinds, deployer role.
-# CHANGE : sourceRepos, namespace pattern, group email, sync window times.
+# PURPOSE: Strict prod: sync window, blocked kinds, deployer role.
 # APPLY  : kubectl apply -f project-prod.yaml
 # ======================================================================
 apiVersion: argoproj.io/v1alpha1
@@ -151,31 +133,50 @@ spec:
     warn: true
 ```
 
----
+</details>
 
-## Apply and Verify
+## 6. Approach B · CLI
+<details>
+<summary>📄 <b>project-cli.sh</b> — Create a project, windows, roles and tokens with the CLI.</summary>
 
 ```bash
-kubectl -n argocd get appprojects
-argocd proj list
-argocd proj get myargoproject-prod
+#!/bin/sh
+# ======================================================================
+# FILE   : project-cli.sh
+# PURPOSE: Create a project, windows, roles and tokens with the CLI.
+# APPLY  : sh project-cli.sh
+# ======================================================================
+# Approach B: create and tune a project with the CLI (good for quick tests; use YAML for production)
+argocd proj create myargoproject-dev -d https://kubernetes.default.svc,'*-dev' -s https://github.com/<org>/<gitops-repo>.git
+argocd proj add-source myargoproject-dev https://github.com/<org>/another-repo.git
+argocd proj add-destination myargoproject-dev https://kubernetes.default.svc 'extra-dev'
+argocd proj allow-cluster-resource myargoproject-dev "" Namespace      # allow Namespace creation
+argocd proj windows add myargoproject-prod --kind deny --schedule "0 9 * * 1-5" --duration 8h --applications '*' --manual-sync
+argocd proj role create myargoproject-prod deployer
+argocd proj role add-policy myargoproject-prod deployer --action sync --permission allow --object '*'
+argocd proj role create-token myargoproject-prod deployer           # JWT for CI (see folder 12)
+argocd proj list && argocd proj get myargoproject-prod
 ```
 
----
+</details>
 
-## Troubleshooting
+## 7. Approach C · UI
+**Settings → Projects → + New Project** → name → fill *Source repositories*, *Destinations*, *Cluster resource allow list* → Create.
 
-| Symptom | Likely cause | Fix |
+## 8. Verify
+```bash
+argocd proj list
+argocd proj get myargoproject-prod
+argocd proj windows list myargoproject-prod
+```
+
+## 9. Troubleshooting
+| Symptom | Cause | Fix |
 |---|---|---|
-| app not permitted in project | repo/namespace/kind not allowed | Edit sourceRepos / destinations / clusterResourceWhitelist |
-| Cannot delete project | Apps still use it | Move or delete the apps first |
-| Sync blocked unexpectedly | A deny sync window is active | argocd proj windows list <project> |
+| `application repo ... is not permitted in project` | Repo not in `sourceRepos` | add it |
+| `destination ... not permitted` | namespace/server mismatch | fix `destinations` |
+| `resource ... is not permitted` | cluster-wide kind not whitelisted | add to `clusterResourceWhitelist` |
+| Sync blocked | deny window active | `argocd proj windows list` |
 
----
-
-## Checklist
-
-- [ ] One project per environment
-- [ ] No '*' repo/namespace in prod
-- [ ] Namespace creation allowed only if CreateNamespace=true is used
-- [ ] Roles use SSO groups, not users
+## 10. Checklist
+- [ ] One project per environment · [ ] no `'*'` in prod · [ ] sync window for prod · [ ] roles use SSO groups

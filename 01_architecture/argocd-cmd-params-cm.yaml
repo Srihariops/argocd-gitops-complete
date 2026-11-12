@@ -1,0 +1,21 @@
+# ======================================================================
+# FILE   : argocd-cmd-params-cm.yaml
+# PURPOSE: Component flags. Restart the component after changing.
+# APPLY  : kubectl apply -f argocd-cmd-params-cm.yaml && kubectl -n argocd rollout restart deploy argocd-server argocd-repo-server
+# ======================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm          # fixed name, read by all Argo CD components
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cmd-params-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  server.insecure: "true"                         # server speaks plain HTTP (TLS ends at ingress/ALB)
+  # server.basehref: /argocd                      # serve under a sub-path (also set server.rootpath)
+  controller.status.processors: "20"              # parallel app status checks (raise for 500+ apps)
+  controller.operation.processors: "10"           # parallel syncs
+  controller.repo.server.timeout.seconds: "120"   # wait time for manifest generation
+  reposerver.parallelism.limit: "5"               # simultaneous manifest generations (protects memory)
+  # application.namespaces: "team-a-*"            # allow Applications outside the argocd namespace

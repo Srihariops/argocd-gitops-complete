@@ -1,0 +1,28 @@
+# ======================================================================
+# FILE   : rbac-project-roles.yaml
+# PURPOSE: Roles inside the AppProject with SSO groups.
+# APPLY  : kubectl apply -f rbac-project-roles.yaml
+# ======================================================================
+# APPROACH B: RBAC INSIDE A PROJECT (AppProject.spec.roles). The team that owns the project manages its own roles.
+# Role name becomes   proj:<project>:<role>   and it can be bound to SSO groups or to JWT tokens.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: myargoproject-prod
+  namespace: argocd
+spec:
+  sourceRepos: ["https://github.com/<org>/<gitops-repo>.git"]
+  destinations: [{server: "https://kubernetes.default.svc", namespace: "*-prod"}]
+  roles:
+    - name: deployer
+      description: sync prod apps, nothing else
+      policies:
+        - p, proj:myargoproject-prod:deployer, applications, get,  myargoproject-prod/*, allow
+        - p, proj:myargoproject-prod:deployer, applications, sync, myargoproject-prod/*, allow
+      groups:
+        - argocd-sre@example.com             # SSO group that gets this role
+    - name: ci-bot
+      description: used by the pipeline (JWT token, see rbac-ci-token.sh)
+      policies:
+        - p, proj:myargoproject-prod:ci-bot, applications, get,  myargoproject-prod/*, allow
+        - p, proj:myargoproject-prod:ci-bot, applications, sync, myargoproject-prod/*, allow

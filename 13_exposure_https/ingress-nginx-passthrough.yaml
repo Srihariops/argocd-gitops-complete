@@ -1,0 +1,27 @@
+# ======================================================================
+# FILE   : ingress-nginx-passthrough.yaml
+# PURPOSE: End-to-end TLS, native gRPC.
+# APPLY  : kubectl apply -f ingress-nginx-passthrough.yaml
+# ======================================================================
+# APPROACH C: TLS PASSTHROUGH. Argo CD serves its OWN certificate; nginx just forwards the encrypted traffic.
+# Works with gRPC CLI natively (no --grpc-web). Do NOT set server.insecure here.
+# Requires ingress-nginx started with  --enable-ssl-passthrough  (Helm: controller.extraArgs.enable-ssl-passthrough: "")
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server
+  namespace: argocd
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: argocd.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: argocd-server, port: {name: https}}
+  # Certificate: Argo CD uses argocd-server-tls secret if present (cert-manager Certificate) else a self-signed one.

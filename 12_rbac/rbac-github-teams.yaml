@@ -1,0 +1,17 @@
+# ======================================================================
+# FILE   : rbac-github-teams.yaml
+# PURPOSE: GitHub teams as org:team.
+# APPLY  : kubectl apply -f rbac-github-teams.yaml
+# ======================================================================
+# APPROACH: RBAC for GitHub TEAMS. Group string = <org>:<team-slug>. Reuses roles from rbac-global-google-groups.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+data:
+  scopes: "[groups, email]"
+  policy.default: role:readonly           # everyone logged in may look; change to "" for stricter
+  policy.csv: |
+    g, my-org:devops-team,  role:admin
+    g, my-org:developers,   role:developer      # define role:developer as in the Google example

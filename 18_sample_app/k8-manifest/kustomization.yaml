@@ -1,0 +1,15 @@
+# ======================================================================
+# FILE   : k8-manifest/kustomization.yaml
+# PURPOSE: File list and image tag.
+# ======================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: demo-dev          # applies to every resource below
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+images:
+  - name: nginx
+    newTag: "1.27"           # Image Updater / CI changes this line

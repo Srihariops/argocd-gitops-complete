@@ -1,0 +1,18 @@
+# ======================================================================
+# FILE   : subscribe-per-project.yaml
+# PURPOSE: Annotations on a Project: all its apps.
+# APPLY  : kubectl apply -f subscribe-per-project.yaml
+# ======================================================================
+# SUBSCRIPTION METHOD 2: annotations on an AppProject => EVERY app in the project is subscribed.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: myargoproject-prod
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: prod-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.slack: prod-alerts
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: prod-deploys
+spec:
+  sourceRepos: ["https://github.com/<org>/<gitops-repo>.git"]
+  destinations: [{server: "https://kubernetes.default.svc", namespace: "*-prod"}]

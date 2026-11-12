@@ -1,0 +1,28 @@
+# ======================================================================
+# FILE   : sops-ksops.yaml
+# PURPOSE: Encrypt with KMS, decrypt in repo-server.
+# APPLY  : follow comments
+# ======================================================================
+# APPROACH C: SOPS (+ AWS KMS) with KSOPS in Kustomize. Secrets are encrypted FILES in Git; Argo CD decrypts at render time.
+# 1) .sops.yaml in the repo root:
+#      creation_rules:
+#        - path_regex: .*secret.*\.yaml$
+#          encrypted_regex: ^(data|stringData)$
+#          kms: arn:aws:kms:ap-south-1:<ACCOUNT_ID>:key/<KEY_ID>
+# 2) sops --encrypt --in-place secret.yaml        (Git now holds ciphertext)
+# 3) Argo CD repo-server needs the KSOPS plugin/binary and IAM permission kms:Decrypt (IRSA).
+# 4) In the app folder, kustomization.yaml:
+apiVersion: viaduct.ai/v1
+kind: ksops
+metadata:
+  name: secret-generator
+  annotations:
+    config.kubernetes.io/function: |
+      exec:
+        path: ksops
+files:
+  - ./secret.enc.yaml                 # the SOPS-encrypted Secret
+---
+# and in kustomization.yaml:
+#   generators:
+#     - secret-generator.yaml
